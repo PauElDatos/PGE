@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Presupuestos — % del gasto por política (España)</title>
 
-  <!-- Plotly (puedes descargarlo y servirlo localmente si prefieres) -->
-  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
-
   <style>
     :root{
       --uiScale: 1.35;
@@ -54,34 +51,6 @@
     }
     .h-title p{ margin:6px 0 0 0; font-size: calc(13px * var(--uiScale)); opacity:.9; }
 
-    .h-meta{
-      font-size: calc(12px * var(--uiScale));
-      opacity:.85;
-      text-align:right;
-      max-width:62ch;
-    }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px;
-      border:1px solid var(--stroke);
-      border-radius:999px;
-      background:rgba(255,255,255,.03);
-      user-select:none;
-    }
-    .dot{
-      width:8px; height:8px; border-radius:50%;
-      background:var(--primary);
-      box-shadow:0 0 0 3px rgba(254,247,2,.15);
-    }
-    a.back{
-      color:var(--text);
-      text-decoration:none;
-      border-bottom:1px solid rgba(255,255,255,.18);
-      padding-bottom:1px;
-      white-space:nowrap;
-    }
-    a.back:hover{ border-bottom-color: rgba(254,247,2,.35); color:#fff; }
-
     main{
       height: calc(100vh - 70px);
       display:grid;
@@ -120,7 +89,7 @@
     }
     .sub{
       font-size: calc(12px * var(--uiScale));
-      opacity:.85;
+      opacity:.9;
       text-align:right;
       max-width:56ch;
       white-space:nowrap;
@@ -128,16 +97,6 @@
     }
 
     .pc{ padding:12px; min-height:0; height:100%; }
-
-    .left{
-      display:grid;
-      grid-template-rows: 290px 1fr;
-      gap:12px;
-      min-height:0;
-    }
-
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .row + .row{ margin-top:10px; }
 
     .btn{
       appearance:none;
@@ -148,45 +107,18 @@
       padding:9px 10px;
       font-size: calc(12px * var(--uiScale));
       cursor:pointer;
-      transition:.12s transform ease, .12s border-color ease, .12s color ease;
+      transition:.12s transform ease, .12s border-color ease, .12s color ease, .12s background ease;
       white-space:nowrap;
       user-select:none;
+      line-height:1;
     }
     .btn:hover{ border-color: rgba(254,247,2,.35); color:#fff; transform: translateY(-1px); }
-    .btn.primary{
-      border-color: rgba(254,247,2,.4);
+    .btn.active{
+      border-color: rgba(254,247,2,.55);
       color: #111;
-      background: rgba(254,247,2,.95);
+      background: rgba(254,247,2,.92);
     }
-    .btn.primary:hover{ transform: translateY(-1px); border-color: rgba(254,247,2,.75); }
     .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
-
-    .toggle{
-      display:flex; align-items:center; gap:10px;
-      font-size: calc(12px * var(--uiScale));
-      opacity:.95;
-      user-select:none;
-    }
-    .toggle input{ transform: scale(1.15); accent-color: var(--primary); }
-
-    input[type="text"]{
-      width:100%;
-      padding:10px 10px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.18);
-      color:var(--text);
-      outline:none;
-      font-size: calc(12px * var(--uiScale));
-    }
-    input[type="text"]:focus{ border-color: rgba(254,247,2,.35); }
-
-    .hint{
-      font-size: calc(11px * var(--uiScale));
-      opacity:.78;
-      line-height:1.35;
-      margin-top:8px;
-    }
 
     .legend{
       display:flex;
@@ -230,40 +162,106 @@
       flex-direction:column;
       min-height:0;
     }
-    #plot{
-      height:100%;
-      min-height:0;
-      width:100%;
+
+    .svgWrap{
+      position:relative;
+      flex: 1 1 auto;
+      min-height: 280px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(0,0,0,.08);
+      border: 1px solid rgba(255,255,255,.06);
     }
 
-    .footer{
-      padding:10px 12px;
-      border-top:1px solid var(--stroke);
+    #chartSvg{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .tooltip{
+      position:absolute;
+      z-index:3;
+      min-width: 220px;
+      max-width: 360px;
+      max-height: 320px;
+      overflow:auto;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.82);
+      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      padding: 10px 10px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      pointer-events:none;
+      font-size: calc(12px * var(--uiScale));
+      line-height: 1.25;
+    }
+    .ttYear{
+      font-family: var(--fontTitle);
+      color: var(--primary);
+      letter-spacing:.2px;
+      margin-bottom:6px;
+      font-size: calc(13px * var(--uiScale));
+    }
+    .ttRow{
       display:flex;
-      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      padding: 3px 0;
+      border-bottom: 1px dashed rgba(255,255,255,.08);
+    }
+    .ttRow:last-child{ border-bottom:none; }
+    .ttSw{
+      width:10px; height:10px; border-radius:3px; flex:0 0 auto;
+    }
+    .ttName{
+      flex: 1 1 auto;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255,255,255,.90);
+    }
+    .ttVal{
+      flex:0 0 auto;
+      color: rgba(255,255,255,.95);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chartControls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      padding: 10px 0 0 0;
+    }
+
+    .footerSingle{
+      padding:10px 0 0 0;
       font-size: calc(12px * var(--uiScale));
       opacity:.85;
     }
 
-    .drop{
-      border:1px dashed rgba(255,255,255,.18);
-      border-radius:14px;
-      padding:10px;
-      background: rgba(255,255,255,.02);
+    .errorBox{
+      position:absolute;
+      inset: 0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:18px;
+      color: rgba(255,255,255,.9);
+      font-size: calc(13px * var(--uiScale));
+      background: rgba(0,0,0,.35);
+      z-index:2;
     }
-    .drop strong{ color:#fff; }
-    .fileRow{ display:grid; grid-template-columns: 1fr; gap:8px; margin-top:8px; }
-    .fileRow input[type="file"]{ width:100%; }
 
     @media (max-width: 900px){
       main{
         height:auto;
         grid-template-columns: 1fr;
       }
-      .left{ grid-template-rows: auto auto; }
-      #plot{ height: 520px; }
+      .svgWrap{ height: 520px; }
       header{ align-items:flex-start; flex-direction:column; }
-      .h-meta{ text-align:left; }
     }
   </style>
 </head>
@@ -271,93 +269,47 @@
 <body>
   <header>
     <div class="h-title">
-      <a class="back" href="index.html">← Inicio</a>
       <h1>Presupuestos generales del Estado — España</h1>
       <p>% del Presupuesto de Gasto por Política y Año</p>
-    </div>
-
-    <div class="h-meta">
-      <div class="pill" id="statusPill" title="Estado de datos">
-        <span class="dot"></span>
-        <span id="statusText">Cargando datos…</span>
-      </div>
-      <div style="margin-top:8px;">
-        Fuente: <span style="color:#fff">BOE</span> · <span style="opacity:.9;">N.Geolitics</span>
-      </div>
     </div>
   </header>
 
   <main>
-    <!-- IZQUIERDA -->
-    <div class="left">
-      <section class="panel">
-        <div class="ph">
-          <div class="ttl">Controles</div>
-          <div class="sub" id="metaText">—</div>
+    <!-- IZQUIERDA: POLÍTICAS -->
+    <section class="panel">
+      <div class="ph">
+        <div class="ttl">Políticas</div>
+        <div class="sub">
+          <button class="btn" id="btnPre2004" title="Mostrar/ocultar partidas X999 (anteriores a 2004)">Anteriores a 2004</button>
         </div>
-        <div class="pc">
-          <div class="row">
-            <button class="btn primary" id="btnFocusSS">Resaltar “Seguridad Social”</button>
-            <button class="btn" id="btnFocusSE">Resaltar “Sanidad + Educación”</button>
-            <button class="btn" id="btnReset">Reset</button>
-          </div>
+      </div>
+      <div class="pc" style="padding:12px; height:100%; min-height:0;">
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
 
-          <div class="row">
-            <label class="toggle"><input type="checkbox" id="togX999" /> Mostrar detalle X999</label>
-            <label class="toggle"><input type="checkbox" id="togOtros" checked /> Mostrar “otros”</label>
-          </div>
-
-          <div class="row">
-            <button class="btn" id="btnStory">▶ Modo historia (como el vídeo)</button>
-            <button class="btn" id="btnDownload">⬇ Descargar % (JSON)</button>
-          </div>
-
-          <div class="row">
-            <input type="text" id="search" placeholder="Buscar política en la lista (ej. sanidad, educación, defensa…)" />
-          </div>
-
-          <div class="hint">
-            <div>• Click en una política: activar/desactivar línea.</div>
-            <div>• Doble click: foco (atenúa el resto).</div>
-            <div>• “Modo historia”: resalta primero Seguridad Social y luego Sanidad+Educación (2s).</div>
-          </div>
-
-          <div class="drop" id="dropZone" style="margin-top:12px; display:none;">
-            <strong>No encuentro los CSV.</strong><br/>
-            Sube aquí los 3 ficheros (mismos nombres que usa tu script):
-            <div class="fileRow">
-              <input type="file" id="fPol" accept=".csv,text/csv" />
-              <input type="file" id="fMeta1" accept=".csv,text/csv" />
-              <input type="file" id="fMeta2" accept=".csv,text/csv" />
-              <button class="btn" id="btnUseFiles">Usar ficheros subidos</button>
-            </div>
-            <div class="hint">Esperados: <code>pge_politicas.csv</code>, <code>pge_politicas_metadata_1.csv</code>, <code>pge_politicas_metadata_2.csv</code>.</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="ph">
-          <div class="ttl">Políticas</div>
-          <div class="sub"><span id="countText">—</span></div>
-        </div>
-        <div class="pc" style="padding:12px; height:100%; min-height:0;">
-          <div class="legend" id="legend"></div>
-        </div>
-      </section>
-    </div>
-
-    <!-- DERECHA -->
+    <!-- DERECHA: GRÁFICO -->
     <section class="panel">
       <div class="ph">
         <div class="ttl">Gráfico</div>
-        <div class="sub">(% del total anual; suma visible ≈ 100%)</div>
+        <div class="sub">(% del total anual)</div>
       </div>
       <div class="pc chartWrap">
-        <div id="plot"></div>
-        <div class="footer">
-          <div>Fuente: BOE</div>
-          <div>N.Geolitics</div>
+        <div class="svgWrap" id="svgWrap">
+          <svg id="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de porcentaje del presupuesto por política y año"></svg>
+          <div class="tooltip" id="tooltip" style="display:none;"></div>
+          <div class="errorBox" id="errorBox" style="display:none;"></div>
+        </div>
+
+        <div class="chartControls">
+          <button class="btn" id="btnScale">Escala: Exponencial</button>
+          <button class="btn" id="btnCrosshair">Línea vertical: OFF</button>
+          <button class="btn" id="btnHoverFocus">Resaltar al pasar: OFF</button>
+          <button class="btn" id="btnResetFocus" title="Quitar el foco fijo (click en la línea también alterna)">Reset foco</button>
+        </div>
+
+        <div class="footerSingle">
+          Fuente: <span style="color:#fff">BOE</span> · <span style="opacity:.9;">N.Geolitics</span>
         </div>
       </div>
     </section>
@@ -372,7 +324,7 @@ const PALETTE = { bg:"#252525", primary:"#FEF702", text:"#B0B0B0", grid:"#4A4A4A
 function stripAccentsLower(s){
   if (s === null || s === undefined) return "";
   return String(s)
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
@@ -396,8 +348,8 @@ function toNumber(x){
   if (x === null || x === undefined) return NaN;
   if (typeof x === "number") return x;
   const s = String(x).trim()
-    .replace(/\./g, "")      // miles tipo 1.234.567
-    .replace(",", ".");      // decimal con coma
+    .replace(/\./g, "")
+    .replace(",", ".");
   const v = Number(s);
   return Number.isFinite(v) ? v : NaN;
 }
@@ -410,7 +362,6 @@ function sortKeyId(idv){
   return [2, 0, s];
 }
 function hsvToHex(h,s,v){
-  // h in [0,1)
   let r=0,g=0,b=0;
   const i = Math.floor(h*6);
   const f = h*6 - i;
@@ -431,17 +382,43 @@ function hsvToHex(h,s,v){
   };
   return "#" + toHex(r)+toHex(g)+toHex(b);
 }
-function colorList(n){
+function colorList(n, sat=0.9, val=1.0){
   if (n<=0) return [];
   const cols=[];
   for (let i=0;i<n;i++){
-    cols.push(hsvToHex(i/n, 0.9, 1.0));
+    cols.push(hsvToHex(i/n, sat, val));
   }
   return cols;
 }
 
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+function binarySearchNearest(sortedArr, target){
+  let lo=0, hi=sortedArr.length-1;
+  if (target <= sortedArr[0]) return 0;
+  if (target >= sortedArr[hi]) return hi;
+  while (hi - lo > 1){
+    const mid = (lo + hi) >> 1;
+    if (sortedArr[mid] === target) return mid;
+    if (sortedArr[mid] < target) lo = mid; else hi = mid;
+  }
+  return (Math.abs(sortedArr[lo] - target) <= Math.abs(sortedArr[hi] - target)) ? lo : hi;
+}
+
+function niceStepX(span){
+  if (span <= 10) return 1;
+  if (span <= 20) return 2;
+  if (span <= 40) return 5;
+  return 10;
+}
+function niceStepY(ymax){
+  if (ymax <= 20) return 2;
+  if (ymax <= 50) return 5;
+  return 10;
+}
+
 /* ===========================
-   CSV parsing (simple + robust)
+   CSV parsing
    =========================== */
 function splitCSVLine(line, sep){
   const out = [];
@@ -476,7 +453,6 @@ function detectSep(firstLine){
   return best;
 }
 function parseCSV(text){
-  // Normaliza saltos y elimina BOM
   text = text.replace(/^\uFEFF/, "");
   const lines = text.split(/\r?\n/).filter(l => l.trim().length>0);
   if (!lines.length) return { cols:[], rows:[] };
@@ -494,26 +470,14 @@ function parseCSV(text){
   }
   return { cols, rows };
 }
-
 async function fetchText(url){
   const res = await fetch(url, { cache:"no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status + " al cargar " + url);
   return await res.text();
 }
 
-async function readFileAsText(file){
-  const buf = await file.arrayBuffer();
-  let txt = new TextDecoder("utf-8", { fatal:false }).decode(buf);
-  // heurística: si hay muchos �, probar cp1252
-  const bad = (txt.match(/\uFFFD/g) || []).length;
-  if (bad > 10){
-    txt = new TextDecoder("windows-1252", { fatal:false }).decode(buf);
-  }
-  return txt;
-}
-
 /* ===========================
-   Lógica del script (preparar_series_pct) en JS
+   Lógica del script (preparar_series_pct)
    =========================== */
 const PENSIONS_LABEL = "Pensiones";
 const PENSIONS_PATTERNS = new Set(["pensiones"]);
@@ -537,26 +501,6 @@ function isGestionSS(nameNorm){
   return nameNorm.includes("gestion") && nameNorm.includes("seguridad social");
 }
 
-function findFocusLabel(labels){
-  for (const lab of labels){
-    if (stripAccentsLower(lab).includes("seguridad social")) return lab;
-  }
-  for (const lab of labels){
-    if (stripAccentsLower(lab).includes("pension")) return lab;
-  }
-  return null;
-}
-function findLabelByKeywords(labels, keywords){
-  const normLabels = labels.map(l => [l, stripAccentsLower(l)]);
-  const normKW = (keywords||[]).map(k => stripAccentsLower(k)).filter(Boolean);
-  for (const [lab, nlab] of normLabels){
-    for (const kw of normKW){
-      if (kw && nlab.includes(kw)) return lab;
-    }
-  }
-  return null;
-}
-
 function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
   const colsPol = dfPol.cols;
   const rowsPol = dfPol.rows;
@@ -566,7 +510,6 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
   const c_pol  = pickCol(colsPol, ["politica","política"]);
   const c_val  = pickCol(colsPol, ["presupuesto","presupuesto gasto","valor","importe"]);
 
-  // normaliza rows base
   const base = [];
   for (const r of rowsPol){
     const id = String(r[c_id] ?? "").trim();
@@ -585,7 +528,6 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
   }
   if (!base.length) return null;
 
-  // meta1: id -> nombre (ordenado por id)
   const colsM1 = dfMeta1.cols;
   const rowsM1 = dfMeta1.rows;
   const c_m1_id  = pickCol(colsM1, ["id_politica"]);
@@ -624,8 +566,7 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
     return [OTROS_LABEL, "otros"];
   }
 
-  // agrega por (Label, Año)
-  const gMap = new Map(); // key = label||year
+  const gMap = new Map();
   const labelTipo = new Map();
   for (const r of base){
     const [lab, tp] = clasificar(r.id, r.pol);
@@ -634,7 +575,6 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
     if (!labelTipo.has(lab)) labelTipo.set(lab, tp);
   }
 
-  // convierte a array g
   let g = [];
   for (const [key, sum] of gMap.entries()){
     const [lab, y] = key.split("||");
@@ -649,7 +589,6 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
     });
   }
 
-  // 1) ocultar componentes desde 2005
   g = g.filter(row => {
     if (row.Año < OLD31_CUTOFF_YEAR) return true;
     const ln = row.Label_norm;
@@ -657,21 +596,17 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
     return !isComp;
   });
 
-  // 2) ocultar vieja 31 pre-2005
   g = g.filter(row => {
     if (row.Año >= OLD31_CUTOFF_YEAR) return true;
     return !OLD31_PRE2005_NAMES.has(row.Label_norm);
   });
 
-  // 3) serie compuesta Seguridad Social
-  // PRE-2005: usa nombres antiguos
   const preMap = new Map();
   for (const r of base){
     if (r.year < OLD31_CUTOFF_YEAR && OLD31_PRE2005_NAMES.has(r.pol_norm)){
       preMap.set(r.year, (preMap.get(r.year)||0) + r.val);
     }
   }
-  // POST-2005: suma IDs 21/22/23/25/29 o nombres equivalentes o gestión SS
   const postMap = new Map();
   for (const r of base){
     if (r.year >= OLD31_CUTOFF_YEAR){
@@ -689,16 +624,13 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
   for (const [year,val] of postMap.entries()) comp.push({ Label: OLD31_EQUIV_LABEL, Año: year, Valor: val });
   comp.sort((a,b)=>a.Año-b.Año);
 
-  // g2 = g + comp
   const g2 = g.map(r => ({ Label:r.Label, Año:r.Año, Valor:r.Valor })).concat(comp);
 
-  // totales anuales del DF original (base)
   const totMap = new Map();
   for (const r of base){
     totMap.set(r.year, (totMap.get(r.year)||0) + r.val);
   }
 
-  // pct rows
   const pctRows = [];
   for (const r of g2){
     const total = totMap.get(r.Año) || NaN;
@@ -710,7 +642,6 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
     });
   }
 
-  // legend_labels desde meta1, unificando Pensiones
   const legend_labels = [];
   for (const row of meta1_sorted){
     const idp = row.id;
@@ -726,13 +657,11 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
   const labelsExist = new Set(pctRows.map(r => r.Label));
   const labels_main = legend_labels.filter(lab => labelsExist.has(lab) || lab === OTROS_LABEL);
 
-  // x999 labels
   const x999_labels = Array.from(labelTipo.entries())
     .filter(([lab,tp]) => tp === "x999")
     .map(([lab,_]) => lab)
     .sort((a,b)=>a.localeCompare(b, "es"));
 
-  // series por label
   const byLabel = new Map();
   for (const r of pctRows){
     if (!byLabel.has(r.Label)) byLabel.set(r.Label, []);
@@ -757,427 +686,762 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
 }
 
 /* ===========================
-   UI + Plotly
+   Estado + DOM
    =========================== */
 const els = {
-  statusText: document.getElementById("statusText"),
-  statusPill: document.getElementById("statusPill"),
+  svgWrap: document.getElementById("svgWrap"),
+  svg: document.getElementById("chartSvg"),
+  tooltip: document.getElementById("tooltip"),
   legend: document.getElementById("legend"),
-  countText: document.getElementById("countText"),
-  metaText: document.getElementById("metaText"),
-  search: document.getElementById("search"),
-  togX999: document.getElementById("togX999"),
-  togOtros: document.getElementById("togOtros"),
-  btnFocusSS: document.getElementById("btnFocusSS"),
-  btnFocusSE: document.getElementById("btnFocusSE"),
-  btnReset: document.getElementById("btnReset"),
-  btnStory: document.getElementById("btnStory"),
-  btnDownload: document.getElementById("btnDownload"),
-  dropZone: document.getElementById("dropZone"),
-  fPol: document.getElementById("fPol"),
-  fMeta1: document.getElementById("fMeta1"),
-  fMeta2: document.getElementById("fMeta2"),
-  btnUseFiles: document.getElementById("btnUseFiles"),
+  btnPre2004: document.getElementById("btnPre2004"),
+  btnScale: document.getElementById("btnScale"),
+  btnCrosshair: document.getElementById("btnCrosshair"),
+  btnHoverFocus: document.getElementById("btnHoverFocus"),
+  btnResetFocus: document.getElementById("btnResetFocus"),
+  errorBox: document.getElementById("errorBox"),
 };
 
 let app = {
   prepared: null,
-  traceIndexByLabel: new Map(),
+  years: [],
+  yearToIndex: new Map(),
+  allLabels: [],
   labelsMain: [],
   x999Labels: [],
-  focusSet: null,
-  showX999: false,
-  showOtros: true,
+  showPre2004: false,
+
+  colorMap: new Map(),
+  valuesByLabel: new Map(),
+  visible: new Map(),
+
+  scaleMode: "exp",
+  crosshairMode: false,
+  hoverFocus: false,
+  pinnedFocus: null,
+  hoverLabel: null,
 };
 
-function setStatus(txt, ok=true){
-  els.statusText.textContent = txt;
-  els.statusPill.style.borderColor = ok ? "rgba(254,247,2,.35)" : "rgba(255,90,90,.55)";
-  els.statusPill.querySelector(".dot").style.background = ok ? "var(--primary)" : "rgba(255,90,90,1)";
+function setButtonState(btn, isOn){
+  btn.classList.toggle("active", !!isOn);
 }
 
-function niceStepX(span){
-  if (span <= 10) return 1;
-  if (span <= 20) return 2;
-  if (span <= 40) return 5;
-  return 10;
+function buildColorMap(prep){
+  const { labels_main, x999_labels, series } = prep;
+
+  const mainCols = colorList(labels_main.length, 0.9, 1.0);
+  const cm = new Map();
+  labels_main.forEach((lab,i)=> cm.set(lab, mainCols[i] || PALETTE.text));
+
+  cm.set(OTROS_LABEL, "rgba(176,176,176,.85)");
+
+  const xCols = colorList(x999_labels.length, 0.35, 0.95);
+  x999_labels.forEach((lab,i)=> cm.set(lab, xCols[i] || "rgba(176,176,176,.55)"));
+
+  for (const lab of series.keys()){
+    if (!cm.has(lab)) cm.set(lab, "rgba(176,176,176,.7)");
+  }
+  return cm;
 }
-function niceStepY(ymax){
-  if (ymax <= 20) return 2;
-  if (ymax <= 50) return 5;
-  return 10;
+
+function buildAlignedValues(prep){
+  const years = prep.years;
+  const n = years.length;
+  const yearToIndex = new Map(years.map((y,i)=>[y,i]));
+  const valuesByLabel = new Map();
+
+  for (const [lab, s] of prep.series.entries()){
+    const arr = new Float64Array(n);
+    for (let i=0;i<n;i++) arr[i] = NaN;
+    for (let i=0;i<s.xs.length;i++){
+      const y = s.xs[i];
+      const idx = yearToIndex.get(y);
+      if (idx !== undefined) arr[idx] = s.ys[i];
+    }
+    valuesByLabel.set(lab, arr);
+  }
+  return { years, yearToIndex, valuesByLabel };
 }
 
-function buildPlot(prep){
-  app.prepared = prep;
-  const { series, labels_main, x999_labels, years, y_max_pct } = prep;
-  app.labelsMain = labels_main;
-  app.x999Labels = x999_labels;
+function effectiveFocusLabel(){
+  if (app.pinnedFocus) return app.pinnedFocus;
+  if (app.hoverFocus) return app.hoverLabel;
+  return null;
+}
 
-  const minYear = years[0], maxYear = years[years.length-1];
-  const xStep = niceStepX(maxYear - minYear);
-  const yMaxPlot = Math.max(10, Math.ceil(y_max_pct/5)*5);
-  const yStep = niceStepY(yMaxPlot);
+/* ===========================
+   Leyenda (Políticas)
+   =========================== */
+function buildLegend(){
+  els.legend.innerHTML = "";
 
-  els.metaText.textContent = `${minYear}–${maxYear} · ${labels_main.length} políticas (+X999: ${x999_labels.length})`;
-
-  // colores como en el script
-  const cols = colorList(labels_main.length);
-  const color_map = new Map(labels_main.map((lab,i)=>[lab, cols[i]]));
-  const otrosColor = color_map.get(OTROS_LABEL) || PALETTE.text;
-
-  // construye traces
-  const traces = [];
-  app.traceIndexByLabel = new Map();
-  let idx = 0;
-
-  for (const [lab, data] of series.entries()){
-    const isMain = labels_main.includes(lab);
-    const isOtros = (lab === OTROS_LABEL);
-    const isX999 = x999_labels.includes(lab);
-
-    let color = otrosColor;
-    if (isMain && !isOtros) color = color_map.get(lab) || otrosColor;
-
-    // visibilidad inicial
-    let visible = true;
-    if (isX999) visible = false; // por defecto, oculto
-    if (isOtros && !app.showOtros) visible = false;
-
-    traces.push({
-      type: "scatter",
-      mode: "lines",
-      name: lab,
-      x: data.xs,
-      y: data.ys,
-      line: { width: 2, color },
-      opacity: 1,
-      visible: visible ? true : "legendonly",
-      hovertemplate: `<b>%{x}</b><br>${lab}: <b>%{y:.2f}%</b><extra></extra>`,
-      showlegend: false, // usamos nuestra leyenda propia
-    });
-
-    app.traceIndexByLabel.set(lab, idx++);
+  const labelsToShow = [...app.labelsMain];
+  if (app.showPre2004){
+    labelsToShow.push(...app.x999Labels);
   }
 
-  const layout = {
-    margin: { l: 60, r: 20, t: 20, b: 55 },
-    paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "rgba(0,0,0,0)",
-    font: { color: PALETTE.text, family: "Arial, system-ui, sans-serif" },
-    xaxis: {
-      title: { text: "Año", standoff: 10 },
-      range: [minYear, maxYear],
-      tick0: minYear,
-      dtick: xStep,
-      gridcolor: "rgba(74,74,74,.45)",
-      zeroline: false,
-      showline: true,
-      linecolor: "rgba(176,176,176,.7)",
-      tickfont: { color: PALETTE.text },
-      titlefont: { color: PALETTE.text },
-    },
-    yaxis: {
-      title: { text: "Porcentaje del total (%)", standoff: 12 },
-      range: [0, yMaxPlot],
-      dtick: yStep,
-      gridcolor: "rgba(74,74,74,.45)",
-      zeroline: false,
-      showline: true,
-      linecolor: "rgba(176,176,176,.7)",
-      tickfont: { color: PALETTE.text },
-      titlefont: { color: PALETTE.text },
-    },
-  };
+  for (const lab of labelsToShow){
+    if (!app.valuesByLabel.has(lab)) continue;
+    const color = app.colorMap.get(lab) || PALETTE.text;
 
-  const config = {
-    displayModeBar: true,
-    responsive: true,
-    scrollZoom: true,
-  };
-
-  Plotly.newPlot("plot", traces, layout, config).then(()=>{
-    buildLegendUI(color_map, otrosColor);
-    applyVisibilityToggles(); // por si toggles iniciales
-    setStatus("Datos listos", true);
-  });
-}
-
-function buildLegendUI(color_map, otrosColor){
-  els.legend.innerHTML = "";
-  const { labels_main, x999_labels } = app.prepared;
-
-  const items = [];
-  for (const lab of labels_main){
-    // Solo mostramos main + otros (como en Manim)
-    if (lab !== OTROS_LABEL && !app.traceIndexByLabel.has(lab)) continue;
-
-    const color = (lab === OTROS_LABEL) ? otrosColor : (color_map.get(lab) || otrosColor);
     const el = document.createElement("div");
     el.className = "item";
     el.dataset.label = lab;
 
+    const badgeTxt = app.x999Labels.includes(lab) ? "pre-2004" : "main";
     el.innerHTML = `
       <span class="sw" style="background:${color}"></span>
       <span class="nm">${lab}</span>
-      <span class="badge" title="Click: mostrar/ocultar · Doble click: foco">main</span>
+      <span class="badge">${badgeTxt}</span>
     `;
 
-    el.addEventListener("click", ()=> toggleTrace(lab, el));
-    el.addEventListener("dblclick", (e)=>{ e.preventDefault(); setFocus(new Set([lab])); });
+    const isVis = app.visible.get(lab) !== false;
+    el.classList.toggle("muted", !isVis);
 
-    items.push(el);
+    el.addEventListener("click", ()=>{
+      const now = !(app.visible.get(lab) !== false);
+      app.visible.set(lab, now);
+      el.classList.toggle("muted", !now);
+      draw();
+    });
+
+    el.addEventListener("dblclick", (e)=>{
+      e.preventDefault();
+      togglePinnedFocus(lab);
+    });
+
+    els.legend.appendChild(el);
   }
 
-  // contador
-  els.countText.textContent = `${items.length} (main) · X999: ${x999_labels.length}`;
-  items.forEach(el => els.legend.appendChild(el));
+  syncLegendFocusMuted();
 }
 
-function getTraceVisible(idx){
-  const gd = document.getElementById("plot");
-  const v = gd.data[idx].visible;
-  return (v === true || v === undefined);
-}
-function setTraceVisible(idx, on){
-  const vis = on ? true : "legendonly";
-  Plotly.restyle("plot", { visible: vis }, [idx]);
-}
-
-function toggleTrace(label, el){
-  const idx = app.traceIndexByLabel.get(label);
-  if (idx === undefined) return;
-  const on = getTraceVisible(idx);
-  setTraceVisible(idx, !on);
-  el.classList.toggle("muted", on);
-}
-
-function setFocus(setLabels){
-  // focus mode como en el script: foco => resto atenuado
-  app.focusSet = setLabels;
-
-  const gd = document.getElementById("plot");
-  const inactiveOpacity = 0.15;
-  const inactiveWidth = 1.5;
-  const activeWidth = 3.0;
-  const normalWidth = 2.0;
-
-  const upd = { "line.width": [], "opacity": [] };
-  const idxs = [];
-
-  gd.data.forEach((tr, i)=>{
-    const lab = tr.name;
-    const isFocus = setLabels && setLabels.has(lab);
-    idxs.push(i);
-    if (!setLabels){
-      upd["line.width"].push(normalWidth);
-      upd["opacity"].push(1.0);
-    } else if (isFocus){
-      upd["line.width"].push(activeWidth);
-      upd["opacity"].push(1.0);
-    } else {
-      upd["line.width"].push(inactiveWidth);
-      upd["opacity"].push(inactiveOpacity);
-    }
-  });
-
-  Plotly.restyle("plot", upd, idxs);
-
-  // marca UI
-  document.querySelectorAll(".item").forEach(it=>{
+function syncLegendFocusMuted(){
+  const focus = effectiveFocusLabel();
+  const items = els.legend.querySelectorAll(".item");
+  items.forEach(it=>{
     const lab = it.dataset.label;
-    if (!setLabels){
-      it.classList.remove("muted");
+    if (!focus){
+      const isVis = app.visible.get(lab) !== false;
+      it.classList.toggle("muted", !isVis);
     } else {
-      it.classList.toggle("muted", !setLabels.has(lab));
+      const isVis = app.visible.get(lab) !== false;
+      const keep = (lab === focus);
+      it.classList.toggle("muted", !isVis || !keep);
     }
   });
 }
 
-function resetFocus(){
-  setFocus(null);
-}
-
-function applyVisibilityToggles(){
-  const { x999_labels } = app.prepared;
-  const showX999 = !!els.togX999.checked;
-  const showOtros = !!els.togOtros.checked;
-  app.showX999 = showX999;
-  app.showOtros = showOtros;
-
-  // X999 traces
-  for (const lab of x999_labels){
-    const idx = app.traceIndexByLabel.get(lab);
-    if (idx === undefined) continue;
-    Plotly.restyle("plot", { visible: showX999 ? true : "legendonly" }, [idx]);
+/* ===========================
+   SVG rendering
+   =========================== */
+function createSvgEl(tag, attrs={}){
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k,v] of Object.entries(attrs)){
+    el.setAttribute(k, String(v));
   }
+  return el;
+}
 
-  // otros
-  const idxOtros = app.traceIndexByLabel.get(OTROS_LABEL);
-  if (idxOtros !== undefined){
-    Plotly.restyle("plot", { visible: showOtros ? true : "legendonly" }, [idxOtros]);
-    // también atenúa el item si está oculto
-    const item = document.querySelector(`.item[data-label="${OTROS_LABEL}"]`);
-    if (item) item.classList.toggle("muted", !showOtros);
+function formatPct(v){
+  if (!Number.isFinite(v)) return "—";
+  return v.toFixed(2) + "%";
+}
+
+function yTransform(v){
+  if (app.scaleMode === "log"){
+    return Math.log10(1 + Math.max(0, v));
   }
+  return v;
 }
 
-function downloadJSON(){
-  const { series, labels_main, x999_labels, years, y_max_pct } = app.prepared;
-  const out = {
-    title: "Presupuestos generales del Estado — España",
-    subtitle: "% del Presupuesto de Gasto por Política y Año",
-    cutOffYear: OLD31_CUTOFF_YEAR,
-    series: Array.from(series.entries()).map(([label, d]) => ({
-      label,
-      points: d.xs.map((x,i)=>({ year:x, pct:d.ys[i] }))
-    })),
-    labels_main,
-    x999_labels,
-    years,
-    y_max_pct,
-  };
-
-  const blob = new Blob([JSON.stringify(out, null, 2)], { type:"application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "pge_series_pct.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+function computeYMaxVisible(){
+  let ymax = 1;
+  for (const lab of app.allLabels){
+    if (app.visible.get(lab) === false) continue;
+    const arr = app.valuesByLabel.get(lab);
+    if (!arr) continue;
+    for (let i=0;i<arr.length;i++){
+      const v = arr[i];
+      if (Number.isFinite(v)) ymax = Math.max(ymax, v);
+    }
+  }
+  return ymax;
 }
 
-async function storyMode(){
+function computeYTicks(ymax){
+  if (app.scaleMode === "log"){
+    const candidates = [0,1,2,5,10,15,20,30,40,50,60,80,100];
+    const t = candidates.filter(v => v <= ymax + 1e-9);
+    if (t.length < 4){
+      return [0, Math.max(1, Math.round(ymax/3)), Math.max(2, Math.round(2*ymax/3)), Math.ceil(ymax)];
+    }
+    return t;
+  }
+  const step = niceStepY(ymax);
+  const yTop = Math.max(10, Math.ceil(ymax/step)*step);
+  const out = [];
+  for (let v=0; v<=yTop+1e-9; v+=step) out.push(v);
+  return out;
+}
+
+function computeXTicks(minYear, maxYear){
+  const step = niceStepX(maxYear - minYear);
+  const start = Math.ceil(minYear/step)*step;
+  const out = [];
+  for (let y=start; y<=maxYear+1e-9; y+=step) out.push(y);
+  if (out[0] !== minYear) out.unshift(minYear);
+  if (out[out.length-1] !== maxYear) out.push(maxYear);
+  return Array.from(new Set(out)).sort((a,b)=>a-b);
+}
+
+function buildPathForLabel(lab, xScale, yScale){
+  const s = app.prepared.series.get(lab);
+  if (!s) return "";
+  let d = "";
+  for (let i=0;i<s.xs.length;i++){
+    const x = xScale(s.xs[i]);
+    const y = yScale(s.ys[i]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    d += (d ? " L " : "M ") + x.toFixed(2) + " " + y.toFixed(2);
+  }
+  return d;
+}
+
+let lastGeom = null;
+let rafPending = false;
+let lastPointer = null;
+
+function draw(){
   if (!app.prepared) return;
-  els.btnStory.disabled = true;
 
-  const allLabels = Array.from(app.prepared.series.keys());
-  const focusSS = findFocusLabel(allLabels);
-  const focusSan = findLabelByKeywords(allLabels, ["sanidad","salud"]);
-  const focusEdu = findLabelByKeywords(allLabels, ["educacion","enseñanza","ensenanza"]);
+  const wrap = els.svgWrap;
+  const w = Math.max(420, wrap.clientWidth);
+  const h = Math.max(320, wrap.clientHeight);
 
-  if (focusSS) setFocus(new Set([focusSS]));
-  await new Promise(r=>setTimeout(r, 2000));
-  const next = [focusSan, focusEdu].filter(l => l && app.traceIndexByLabel.has(l));
-  if (next.length) setFocus(new Set(next));
-  await new Promise(r=>setTimeout(r, 2000));
+  const svg = els.svg;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.innerHTML = "";
 
-  els.btnStory.disabled = false;
-}
+  const margin = { l: 74, r: 18, t: 18, b: 56 };
+  const plotW = Math.max(10, w - margin.l - margin.r);
+  const plotH = Math.max(10, h - margin.t - margin.b);
 
-function applySearch(){
-  const q = stripAccentsLower(els.search.value);
-  document.querySelectorAll(".item").forEach(it=>{
-    const lab = it.dataset.label || "";
-    const ok = !q || stripAccentsLower(lab).includes(q);
-    it.style.display = ok ? "" : "none";
+  const years = app.years;
+  const minYear = years[0], maxYear = years[years.length-1];
+
+  const xScale = (year)=> margin.l + ((year - minYear) / (maxYear - minYear)) * plotW;
+  const xInv = (px)=> minYear + ((px - margin.l) / plotW) * (maxYear - minYear);
+
+  const yMaxOrig = computeYMaxVisible();
+  const yTicks = computeYTicks(yMaxOrig);
+
+  const yMaxT = Math.max(0.0001, Math.max(...yTicks.map(v => yTransform(v))));
+  const yScale = (v)=> margin.t + plotH - (yTransform(v) / yMaxT) * plotH;
+
+  lastGeom = { w,h, margin, plotW, plotH, minYear, maxYear, xScale, xInv, yScale, yTicks, yMaxOrig, yMaxT };
+
+  svg.appendChild(createSvgEl("rect", { x:0, y:0, width:w, height:h, fill:"rgba(0,0,0,0)" }));
+
+  const gGrid = createSvgEl("g", {});
+  const gAxes = createSvgEl("g", {});
+  const gLines = createSvgEl("g", {});
+  const gOverlay = createSvgEl("g", {});
+
+  const xTicks = computeXTicks(minYear, maxYear);
+
+  for (const yy of xTicks){
+    const x = xScale(yy);
+    gGrid.appendChild(createSvgEl("line", {
+      x1:x, y1:margin.t, x2:x, y2:margin.t+plotH,
+      stroke:"rgba(74,74,74,.38)", "stroke-width":1
+    }));
+    const t = createSvgEl("text", {
+      x:x, y: margin.t+plotH+18,
+      fill:"rgba(176,176,176,.95)",
+      "text-anchor":"middle",
+      "font-size": 12,
+      "font-family":"Arial, system-ui, sans-serif",
+    });
+    t.textContent = yy;
+    gAxes.appendChild(t);
+  }
+
+  for (const tval of yTicks){
+    const y = yScale(tval);
+    gGrid.appendChild(createSvgEl("line", {
+      x1:margin.l, y1:y, x2:margin.l+plotW, y2:y,
+      stroke:"rgba(74,74,74,.38)", "stroke-width":1
+    }));
+    const tx = createSvgEl("text", {
+      x: margin.l-10, y: y+4,
+      fill:"rgba(176,176,176,.95)",
+      "text-anchor":"end",
+      "font-size": 12,
+      "font-family":"Arial, system-ui, sans-serif",
+    });
+    tx.textContent = tval;
+    gAxes.appendChild(tx);
+  }
+
+  gAxes.appendChild(createSvgEl("line", {
+    x1: margin.l, y1: margin.t+plotH, x2: margin.l+plotW, y2: margin.t+plotH,
+    stroke:"rgba(176,176,176,.7)", "stroke-width":1.25
+  }));
+  gAxes.appendChild(createSvgEl("line", {
+    x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
+    stroke:"rgba(176,176,176,.7)", "stroke-width":1.25
+  }));
+
+  const xTitle = createSvgEl("text", {
+    x: margin.l + plotW/2, y: margin.t+plotH+42,
+    fill:"rgba(176,176,176,.95)",
+    "text-anchor":"middle",
+    "font-size": 13,
+    "font-family":"Arial, system-ui, sans-serif",
   });
+  xTitle.textContent = "Año";
+  gAxes.appendChild(xTitle);
+
+  const yTitle = createSvgEl("text", {
+    x: 18, y: margin.t + plotH/2,
+    fill:"rgba(176,176,176,.95)",
+    "text-anchor":"middle",
+    "font-size": 13,
+    "font-family":"Arial, system-ui, sans-serif",
+    transform: `rotate(-90 18 ${margin.t + plotH/2})`
+  });
+  yTitle.textContent = "Porcentaje del total (%)";
+  gAxes.appendChild(yTitle);
+
+  const focus = effectiveFocusLabel();
+  for (const lab of app.allLabels){
+    const d = buildPathForLabel(lab, xScale, yScale);
+    if (!d) continue;
+
+    const isVis = app.visible.get(lab) !== false;
+    const isFocus = !!focus && (lab === focus);
+
+    const opacity = !isVis ? 0 : (!focus ? 1.0 : (isFocus ? 1.0 : 0.12));
+    const strokeW = !focus ? 2.0 : (isFocus ? 3.0 : 1.5);
+
+    const path = createSvgEl("path", {
+      d,
+      fill:"none",
+      stroke: app.colorMap.get(lab) || "rgba(176,176,176,.7)",
+      "stroke-width": strokeW,
+      "stroke-linejoin":"round",
+      "stroke-linecap":"round",
+      "vector-effect":"non-scaling-stroke",
+      opacity: opacity,
+      "data-label": lab,
+      style: "pointer-events:none;"
+    });
+    gLines.appendChild(path);
+  }
+
+  const crosshair = createSvgEl("line", {
+    x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
+    stroke: "rgba(254,247,2,.55)",
+    "stroke-width": 1.5,
+    opacity: 0,
+    "vector-effect":"non-scaling-stroke",
+    id: "crosshairLine",
+  });
+  const dot = createSvgEl("circle", {
+    cx: margin.l, cy: margin.t,
+    r: 4.5,
+    fill: "rgba(254,247,2,.95)",
+    stroke: "rgba(0,0,0,.55)",
+    "stroke-width": 1,
+    opacity: 0,
+    id: "hoverDot",
+  });
+
+  const hit = createSvgEl("rect", {
+    x: margin.l, y: margin.t,
+    width: plotW, height: plotH,
+    fill: "rgba(0,0,0,0)",
+    id: "hitRect",
+    style: "cursor:crosshair;"
+  });
+
+  gOverlay.appendChild(crosshair);
+  gOverlay.appendChild(dot);
+  gOverlay.appendChild(hit);
+
+  svg.appendChild(gGrid);
+  svg.appendChild(gAxes);
+  svg.appendChild(gLines);
+  svg.appendChild(gOverlay);
+
+  syncLegendFocusMuted();
+
+  if (lastPointer){
+    handlePointer(lastPointer, true);
+  }
+
+  attachPointerHandlers();
 }
 
-async function loadDataDefault(){
-  // mismos nombres que usa tu script (puedes cambiarlos aquí si quieres)
-  const polUrl = "pge_politicas.csv";
-  const meta1Url = "pge_politicas_metadata_1.csv";
-  const meta2Url = "pge_politicas_metadata_2.csv";
+function svgPointFromEvent(ev){
+  const rect = els.svg.getBoundingClientRect();
+  const vb = els.svg.viewBox.baseVal;
+  const sx = vb.width / rect.width;
+  const sy = vb.height / rect.height;
+  const x = (ev.clientX - rect.left) * sx;
+  const y = (ev.clientY - rect.top) * sy;
+  return { x, y };
+}
 
-  try{
-    const [polTxt, m1Txt, m2Txt] = await Promise.all([
-      fetchText(polUrl),
-      fetchText(meta1Url),
-      fetchText(meta2Url),
-    ]);
-    const dfPol = parseCSV(polTxt);
-    const dfM1 = parseCSV(m1Txt);
-    const dfM2 = parseCSV(m2Txt);
+function nearestVisibleLabelAtYearIdx(yearIdx, xPix, yPix){
+  let best = null;
+  let bestDist = Infinity;
 
-    const prep = prepararSeriesPct(dfPol, dfM1, dfM2);
-    if (!prep) throw new Error("Los CSV se cargaron pero no hay filas válidas.");
-    return prep;
-  } catch (e){
-    console.warn(e);
-    return null;
+  for (const lab of app.allLabels){
+    if (app.visible.get(lab) === false) continue;
+
+    const arr = app.valuesByLabel.get(lab);
+    if (!arr) continue;
+    const v = arr[yearIdx];
+    if (!Number.isFinite(v)) continue;
+
+    const yy = lastGeom.yScale(v);
+
+    const dx = Math.abs(xPix - lastGeom.xScale(app.years[yearIdx]));
+    const dy = Math.abs(yPix - yy);
+    const d = Math.hypot(dx, dy);
+    if (d < bestDist){
+      bestDist = d;
+      best = { lab, v, yy, d };
+    }
+  }
+  return best;
+}
+
+function buildTooltipAll(yearIdx){
+  const year = app.years[yearIdx];
+  const rows = [];
+
+  for (const lab of app.allLabels){
+    if (app.visible.get(lab) === false) continue;
+    const arr = app.valuesByLabel.get(lab);
+    if (!arr) continue;
+    const v = arr[yearIdx];
+    rows.push({ lab, v, color: app.colorMap.get(lab) || PALETTE.text });
+  }
+
+  rows.sort((a,b)=>{
+    const av = Number.isFinite(a.v) ? a.v : -1;
+    const bv = Number.isFinite(b.v) ? b.v : -1;
+    return bv - av;
+  });
+
+  let html = `<div class="ttYear">Año ${year}</div>`;
+  for (const r of rows){
+    html += `
+      <div class="ttRow">
+        <span class="ttSw" style="background:${r.color}"></span>
+        <span class="ttName">${r.lab}</span>
+        <span class="ttVal">${formatPct(r.v)}</span>
+      </div>
+    `;
+  }
+  return html;
+}
+
+function buildTooltipSingle(yearIdx, lab, v){
+  const year = app.years[yearIdx];
+  const color = app.colorMap.get(lab) || PALETTE.text;
+  return `
+    <div class="ttYear">Año ${year}</div>
+    <div class="ttRow">
+      <span class="ttSw" style="background:${color}"></span>
+      <span class="ttName">${lab}</span>
+      <span class="ttVal">${formatPct(v)}</span>
+    </div>
+  `;
+}
+
+function placeTooltip(xPix, yPix){
+  const tip = els.tooltip;
+  const wrapRect = els.svgWrap.getBoundingClientRect();
+  const vb = els.svg.viewBox.baseVal;
+
+  const xCss = (xPix / vb.width) * wrapRect.width;
+  const yCss = (yPix / vb.height) * wrapRect.height;
+
+  const pad = 12;
+  const offset = 14;
+
+  tip.style.display = "block";
+
+  const tw = tip.offsetWidth || 260;
+  const th = tip.offsetHeight || 180;
+
+  let left = xCss + offset;
+  let top  = yCss + offset;
+
+  if (left + tw + pad > wrapRect.width) left = xCss - tw - offset;
+  if (left < pad) left = pad;
+
+  if (top + th + pad > wrapRect.height) top = yCss - th - offset;
+  if (top < pad) top = pad;
+
+  tip.style.left = left + "px";
+  tip.style.top  = top + "px";
+}
+
+function hideTooltipAndGuides(){
+  els.tooltip.style.display = "none";
+  const ch = els.svg.querySelector("#crosshairLine");
+  const dot = els.svg.querySelector("#hoverDot");
+  if (ch) ch.setAttribute("opacity", "0");
+  if (dot) dot.setAttribute("opacity", "0");
+  app.hoverLabel = null;
+  if (app.hoverFocus && !app.pinnedFocus){
+    draw();
   }
 }
 
-async function loadDataFromFiles(){
-  const f1 = els.fPol.files?.[0];
-  const f2 = els.fMeta1.files?.[0];
-  const f3 = els.fMeta2.files?.[0];
-  if (!f1 || !f2 || !f3) throw new Error("Sube los 3 ficheros CSV.");
-  const [t1,t2,t3] = await Promise.all([readFileAsText(f1), readFileAsText(f2), readFileAsText(f3)]);
-  const dfPol = parseCSV(t1);
-  const dfM1 = parseCSV(t2);
-  const dfM2 = parseCSV(t3);
-  const prep = prepararSeriesPct(dfPol, dfM1, dfM2);
-  if (!prep) throw new Error("No hay filas válidas tras parsear los CSV.");
-  return prep;
+function handlePointer(ev, fromRedraw=false){
+  if (!lastGeom) return;
+  lastPointer = ev;
+
+  const p = svgPointFromEvent(ev);
+  const { margin, plotW, plotH } = lastGeom;
+
+  const inside = (p.x >= margin.l && p.x <= margin.l + plotW && p.y >= margin.t && p.y <= margin.t + plotH);
+  if (!inside){
+    hideTooltipAndGuides();
+    return;
+  }
+
+  const yearApprox = lastGeom.xInv(p.x);
+  const yearIdx = binarySearchNearest(app.years, yearApprox);
+  const year = app.years[yearIdx];
+  const xPix = lastGeom.xScale(year);
+
+  const ch = els.svg.querySelector("#crosshairLine");
+  const dot = els.svg.querySelector("#hoverDot");
+
+  if (app.crosshairMode){
+    if (ch){
+      ch.setAttribute("x1", xPix);
+      ch.setAttribute("x2", xPix);
+      ch.setAttribute("opacity", "1");
+    }
+    els.tooltip.innerHTML = buildTooltipAll(yearIdx);
+    placeTooltip(p.x, p.y);
+
+    const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
+    if (pick && pick.d <= 16){
+      app.hoverLabel = pick.lab;
+      if (dot){
+        dot.setAttribute("cx", xPix);
+        dot.setAttribute("cy", pick.yy);
+        dot.setAttribute("opacity", "1");
+      }
+      if (app.hoverFocus && !app.pinnedFocus && !fromRedraw){
+        draw();
+      }
+    } else {
+      app.hoverLabel = null;
+      if (dot) dot.setAttribute("opacity", "0");
+      if (app.hoverFocus && !app.pinnedFocus && !fromRedraw){
+        draw();
+      }
+    }
+    return;
+  }
+
+  const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
+  if (!pick || pick.d > 14){
+    hideTooltipAndGuides();
+    return;
+  }
+
+  app.hoverLabel = pick.lab;
+  if (app.hoverFocus && !app.pinnedFocus && !fromRedraw){
+    draw();
+  }
+
+  if (dot){
+    dot.setAttribute("cx", xPix);
+    dot.setAttribute("cy", pick.yy);
+    dot.setAttribute("opacity", "1");
+  }
+  if (ch) ch.setAttribute("opacity", "0");
+
+  els.tooltip.innerHTML = buildTooltipSingle(yearIdx, pick.lab, pick.v);
+  placeTooltip(xPix, pick.yy);
+}
+
+function togglePinnedFocus(lab){
+  if (app.pinnedFocus === lab){
+    app.pinnedFocus = null;
+  } else {
+    app.pinnedFocus = lab;
+  }
+  draw();
 }
 
 /* ===========================
    Eventos UI
    =========================== */
-els.togX999.addEventListener("change", ()=>{ if(app.prepared) applyVisibilityToggles(); });
-els.togOtros.addEventListener("change", ()=>{ if(app.prepared) applyVisibilityToggles(); });
-els.btnReset.addEventListener("click", ()=> resetFocus());
-els.btnDownload.addEventListener("click", ()=>{ if(app.prepared) downloadJSON(); });
+els.btnPre2004.addEventListener("click", ()=>{
+  app.showPre2004 = !app.showPre2004;
+  setButtonState(els.btnPre2004, app.showPre2004);
 
-els.search.addEventListener("input", ()=> applySearch());
-
-els.btnFocusSS.addEventListener("click", ()=>{
-  if(!app.prepared) return;
-  const allLabels = Array.from(app.prepared.series.keys());
-  const focus = findFocusLabel(allLabels);
-  if (focus) setFocus(new Set([focus]));
-});
-els.btnFocusSE.addEventListener("click", ()=>{
-  if(!app.prepared) return;
-  const allLabels = Array.from(app.prepared.series.keys());
-  const san = findLabelByKeywords(allLabels, ["sanidad","salud"]);
-  const edu = findLabelByKeywords(allLabels, ["educacion","enseñanza","ensenanza"]);
-  const set = new Set([san, edu].filter(Boolean));
-  if (set.size) setFocus(set);
-});
-els.btnStory.addEventListener("click", ()=> storyMode());
-
-els.btnUseFiles.addEventListener("click", async ()=>{
-  try{
-    setStatus("Procesando ficheros subidos…", true);
-    const prep = await loadDataFromFiles();
-    els.dropZone.style.display = "none";
-    buildPlot(prep);
-  } catch(e){
-    setStatus("Error: " + e.message, false);
+  for (const lab of app.x999Labels){
+    app.visible.set(lab, app.showPre2004);
   }
+
+  if (!app.showPre2004 && app.pinnedFocus && app.x999Labels.includes(app.pinnedFocus)){
+    app.pinnedFocus = null;
+  }
+
+  buildLegend();
+  draw();
 });
+
+els.btnScale.addEventListener("click", ()=>{
+  app.scaleMode = (app.scaleMode === "exp") ? "log" : "exp";
+  els.btnScale.textContent = (app.scaleMode === "exp") ? "Escala: Exponencial" : "Escala: Logarítmica";
+  setButtonState(els.btnScale, app.scaleMode === "log");
+  draw();
+});
+
+els.btnCrosshair.addEventListener("click", ()=>{
+  app.crosshairMode = !app.crosshairMode;
+  els.btnCrosshair.textContent = app.crosshairMode ? "Línea vertical: ON" : "Línea vertical: OFF";
+  setButtonState(els.btnCrosshair, app.crosshairMode);
+  hideTooltipAndGuides();
+});
+
+els.btnHoverFocus.addEventListener("click", ()=>{
+  app.hoverFocus = !app.hoverFocus;
+  els.btnHoverFocus.textContent = app.hoverFocus ? "Resaltar al pasar: ON" : "Resaltar al pasar: OFF";
+  setButtonState(els.btnHoverFocus, app.hoverFocus);
+  app.hoverLabel = null;
+  draw();
+});
+
+els.btnResetFocus.addEventListener("click", ()=>{
+  app.pinnedFocus = null;
+  app.hoverLabel = null;
+  hideTooltipAndGuides();
+  draw();
+});
+
+/* pointer handlers */
+function attachPointerHandlers(){
+  const hit = els.svg.querySelector("#hitRect");
+  if (!hit) return;
+
+  hit.onmousemove = (ev)=>{
+    if (rafPending){
+      lastPointer = ev;
+      return;
+    }
+    rafPending = true;
+    lastPointer = ev;
+    requestAnimationFrame(()=>{
+      rafPending = false;
+      handlePointer(lastPointer);
+    });
+  };
+
+  hit.onmouseleave = ()=>{
+    hideTooltipAndGuides();
+  };
+
+  hit.onclick = (ev)=>{
+    if (!lastGeom) return;
+    const p = svgPointFromEvent(ev);
+    const { margin, plotW, plotH } = lastGeom;
+
+    const inside = (p.x >= margin.l && p.x <= margin.l + plotW && p.y >= margin.t && p.y <= margin.t + plotH);
+    if (!inside) return;
+
+    const yearApprox = lastGeom.xInv(p.x);
+    const yearIdx = binarySearchNearest(app.years, yearApprox);
+    const year = app.years[yearIdx];
+    const xPix = lastGeom.xScale(year);
+
+    const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
+    if (!pick || pick.d > 14) return;
+
+    togglePinnedFocus(pick.lab);
+  };
+}
+
+const ro = new ResizeObserver(()=>{ draw(); });
+ro.observe(els.svgWrap);
+
+/* ===========================
+   Carga de datos
+   =========================== */
+async function loadDataDefault(){
+  const polUrl = "pge_politicas.csv";
+  const meta1Url = "pge_politicas_metadata_1.csv";
+  const meta2Url = "pge_politicas_metadata_2.csv";
+
+  const [polTxt, m1Txt, m2Txt] = await Promise.all([
+    fetchText(polUrl),
+    fetchText(meta1Url),
+    fetchText(meta2Url),
+  ]);
+
+  const dfPol = parseCSV(polTxt);
+  const dfM1 = parseCSV(m1Txt);
+  const dfM2 = parseCSV(m2Txt);
+
+  const prep = prepararSeriesPct(dfPol, dfM1, dfM2);
+  if (!prep) throw new Error("Los CSV se cargaron pero no hay filas válidas.");
+  return prep;
+}
+
+function showError(msg){
+  els.errorBox.style.display = "flex";
+  els.errorBox.textContent = msg;
+}
 
 /* ===========================
    Inicio
    =========================== */
 (async function init(){
-  setStatus("Buscando CSV locales…", true);
-  const prep = await loadDataDefault();
-  if (!prep){
-    setStatus("No encuentro los CSV (sube ficheros)", false);
-    els.dropZone.style.display = "";
-    // pinta un plot vacío “bonito”
-    Plotly.newPlot("plot", [], {
-      margin:{ l:60, r:20, t:20, b:55 },
-      paper_bgcolor:"rgba(0,0,0,0)",
-      plot_bgcolor:"rgba(0,0,0,0)",
-      font:{ color: PALETTE.text, family:"Arial, system-ui, sans-serif" },
-      xaxis:{ title:{text:"Año"}, gridcolor:"rgba(74,74,74,.45)", zeroline:false, showline:true, linecolor:"rgba(176,176,176,.7)" },
-      yaxis:{ title:{text:"Porcentaje del total (%)"}, gridcolor:"rgba(74,74,74,.45)", zeroline:false, showline:true, linecolor:"rgba(176,176,176,.7)" },
-      annotations: [{
-        text: "Sube los CSV para generar el gráfico",
-        xref:"paper", yref:"paper", x:0.5, y:0.5, showarrow:false,
-        font:{ size: 16, color: PALETTE.text }
-      }]
-    }, { displayModeBar:false, responsive:true });
-    return;
+  try{
+    const prep = await loadDataDefault();
+    app.prepared = prep;
+
+    app.labelsMain = prep.labels_main;
+    app.x999Labels = prep.x999_labels;
+    app.allLabels = Array.from(prep.series.keys());
+
+    app.colorMap = buildColorMap(prep);
+
+    const aligned = buildAlignedValues(prep);
+    app.years = aligned.years;
+    app.yearToIndex = aligned.yearToIndex;
+    app.valuesByLabel = aligned.valuesByLabel;
+
+    for (const lab of app.allLabels){
+      const isX = app.x999Labels.includes(lab);
+      app.visible.set(lab, !isX);
+    }
+
+    setButtonState(els.btnPre2004, false);
+    setButtonState(els.btnScale, false);
+    setButtonState(els.btnCrosshair, false);
+    setButtonState(els.btnHoverFocus, false);
+
+    buildLegend();
+    draw();
+  } catch (e){
+    console.error(e);
+    showError("No puedo cargar los CSV necesarios (pge_politicas.csv, pge_politicas_metadata_1.csv, pge_politicas_metadata_2.csv).");
   }
-  buildPlot(prep);
 })();
 </script>
 </body>
