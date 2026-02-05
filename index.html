@@ -32,6 +32,12 @@
       color:var(--text);
       font-family:var(--fontText);
       font-size: calc(14px * var(--uiScale));
+
+      display:flex;
+      flex-direction:column;
+      height:100vh;
+      min-height:100vh;
+      overflow:hidden;
     }
 
     header{
@@ -40,6 +46,7 @@
       align-items:flex-end;
       justify-content:space-between;
       gap:12px;
+      flex: 0 0 auto;
     }
     .h-title{ line-height:1.05; }
     .h-title h1{
@@ -52,12 +59,13 @@
     .h-title p{ margin:6px 0 0 0; font-size: calc(13px * var(--uiScale)); opacity:.9; }
 
     main{
-      height: calc(100vh - 70px);
+      flex: 1 1 auto;
+      min-height:0;
       display:grid;
       grid-template-columns: 340px 1fr;
       gap:12px;
       padding:12px 12px 18px 12px;
-      min-height:0;
+      overflow:hidden;
     }
 
     .panel{
@@ -65,8 +73,10 @@
       border:1px solid var(--stroke);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
-      overflow:hidden;
       min-height:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
     }
     .ph{
       padding:12px 12px 10px 12px;
@@ -77,6 +87,7 @@
       justify-content:space-between;
       gap:10px;
       min-height:44px;
+      flex: 0 0 auto;
     }
     .ttl{
       font-family:var(--fontTitle);
@@ -96,7 +107,12 @@
       flex:0 0 auto;
     }
 
-    .pc{ padding:12px; min-height:0; height:100%; }
+    .pc{
+      padding:12px;
+      flex: 1 1 0;
+      min-height:0;
+      overflow:auto;
+    }
 
     .btn{
       appearance:none;
@@ -118,15 +134,12 @@
       color: #111;
       background: rgba(254,247,2,.92);
     }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
 
+    /* POLÍTICAS */
     .legend{
       display:flex;
       flex-direction:column;
       gap:8px;
-      overflow:auto;
-      height:100%;
-      padding-right:4px;
     }
     .item{
       display:flex;
@@ -145,6 +158,9 @@
       flex:1 1 auto;
       font-size: calc(12px * var(--uiScale));
       line-height:1.15;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
     .badge{
       font-size: calc(10px * var(--uiScale));
@@ -156,17 +172,18 @@
     }
     .muted{ opacity:.35; }
 
-    .chartWrap{
-      height:100%;
+    /* GRÁFICO */
+    .chartPc{
       display:flex;
       flex-direction:column;
-      min-height:0;
+      gap:10px;
+      overflow:hidden;
     }
 
     .svgWrap{
       position:relative;
-      flex: 1 1 auto;
-      min-height: 280px;
+      flex: 1 1 0;
+      min-height:0;
       border-radius: 12px;
       overflow: hidden;
       background: rgba(0,0,0,.08);
@@ -182,10 +199,10 @@
     .tooltip{
       position:absolute;
       z-index:3;
-      min-width: 220px;
-      max-width: 360px;
-      max-height: 320px;
-      overflow:auto;
+      min-width: 240px;
+      max-width: 420px;
+      max-height: 420px;
+      overflow:hidden;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.82);
       backdrop-filter: blur(6px);
@@ -232,13 +249,14 @@
       gap:10px;
       flex-wrap:wrap;
       align-items:center;
-      padding: 10px 0 0 0;
+      flex: 0 0 auto;
     }
 
     .footerSingle{
-      padding:10px 0 0 0;
+      flex: 0 0 auto;
       font-size: calc(12px * var(--uiScale));
       opacity:.85;
+      padding-bottom: 2px;
     }
 
     .errorBox{
@@ -256,12 +274,13 @@
     }
 
     @media (max-width: 900px){
+      body{ overflow:auto; }
       main{
-        height:auto;
+        overflow:visible;
         grid-template-columns: 1fr;
       }
-      .svgWrap{ height: 520px; }
-      header{ align-items:flex-start; flex-direction:column; }
+      .svgWrap{ height: 520px; min-height: 520px; }
+      .pc{ overflow:visible; }
     }
   </style>
 </head>
@@ -275,7 +294,6 @@
   </header>
 
   <main>
-    <!-- IZQUIERDA: POLÍTICAS -->
     <section class="panel">
       <div class="ph">
         <div class="ttl">Políticas</div>
@@ -283,18 +301,18 @@
           <button class="btn" id="btnPre2004" title="Mostrar/ocultar partidas X999 (anteriores a 2004)">Anteriores a 2004</button>
         </div>
       </div>
-      <div class="pc" style="padding:12px; height:100%; min-height:0;">
+      <div class="pc">
         <div class="legend" id="legend"></div>
       </div>
     </section>
 
-    <!-- DERECHA: GRÁFICO -->
     <section class="panel">
       <div class="ph">
         <div class="ttl">Gráfico</div>
         <div class="sub">(% del total anual)</div>
       </div>
-      <div class="pc chartWrap">
+
+      <div class="pc chartPc">
         <div class="svgWrap" id="svgWrap">
           <svg id="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de porcentaje del presupuesto por política y año"></svg>
           <div class="tooltip" id="tooltip" style="display:none;"></div>
@@ -305,7 +323,7 @@
           <button class="btn" id="btnScale">Escala: Exponencial</button>
           <button class="btn" id="btnCrosshair">Línea vertical: OFF</button>
           <button class="btn" id="btnHoverFocus">Resaltar al pasar: OFF</button>
-          <button class="btn" id="btnResetFocus" title="Quitar el foco fijo (click en la línea también alterna)">Reset foco</button>
+          <button class="btn" id="btnResetFocus" title="Quitar selección">Reset foco</button>
         </div>
 
         <div class="footerSingle">
@@ -316,15 +334,12 @@
   </main>
 
 <script>
-/* ===========================
-   Utilidades (normalización)
-   =========================== */
 const PALETTE = { bg:"#252525", primary:"#FEF702", text:"#B0B0B0", grid:"#4A4A4A" };
 
 function stripAccentsLower(s){
   if (s === null || s === undefined) return "";
   return String(s)
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
@@ -390,9 +405,7 @@ function colorList(n, sat=0.9, val=1.0){
   }
   return cols;
 }
-
 function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
-
 function binarySearchNearest(sortedArr, target){
   let lo=0, hi=sortedArr.length-1;
   if (target <= sortedArr[0]) return 0;
@@ -404,7 +417,6 @@ function binarySearchNearest(sortedArr, target){
   }
   return (Math.abs(sortedArr[lo] - target) <= Math.abs(sortedArr[hi] - target)) ? lo : hi;
 }
-
 function niceStepX(span){
   if (span <= 10) return 1;
   if (span <= 20) return 2;
@@ -417,9 +429,7 @@ function niceStepY(ymax){
   return 10;
 }
 
-/* ===========================
-   CSV parsing
-   =========================== */
+/* CSV */
 function splitCSVLine(line, sep){
   const out = [];
   let cur = "";
@@ -432,9 +442,7 @@ function splitCSVLine(line, sep){
     } else if (!inQ && ch === sep){
       out.push(cur);
       cur = "";
-    } else {
-      cur += ch;
-    }
+    } else cur += ch;
   }
   out.push(cur);
   return out;
@@ -476,9 +484,7 @@ async function fetchText(url){
   return await res.text();
 }
 
-/* ===========================
-   Lógica del script (preparar_series_pct)
-   =========================== */
+/* prepararSeriesPct */
 const PENSIONS_LABEL = "Pensiones";
 const PENSIONS_PATTERNS = new Set(["pensiones"]);
 const OTROS_LABEL = "otros";
@@ -496,12 +502,10 @@ const OLD31_PRE2005_NAMES = new Set([
   "seguridad social y proteccion social",
   "seguridad y proteccion social",
 ]);
-
 function isGestionSS(nameNorm){
   return nameNorm.includes("gestion") && nameNorm.includes("seguridad social");
 }
-
-function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
+function prepararSeriesPct(dfPol, dfMeta1){
   const colsPol = dfPol.cols;
   const rowsPol = dfPol.rows;
 
@@ -669,7 +673,6 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
   }
   const series = new Map();
   let allYears = new Set();
-  let yMax = 1.0;
 
   for (const [lab, pts] of byLabel.entries()){
     pts.sort((a,b)=>a[0]-b[0]);
@@ -677,17 +680,14 @@ function prepararSeriesPct(dfPol, dfMeta1 /* dfMeta2 reservado */){
     const xs = pts.map(p=>p[0]);
     const ys = pts.map(p=>p[1]);
     xs.forEach(y=>allYears.add(y));
-    ys.forEach(v=>{ if (Number.isFinite(v)) yMax = Math.max(yMax, v); });
     series.set(lab, { xs, ys });
   }
 
   const years = Array.from(allYears).sort((a,b)=>a-b);
-  return { series, labels_main, x999_labels, years, y_max_pct: yMax };
+  return { series, labels_main, x999_labels, years };
 }
 
-/* ===========================
-   Estado + DOM
-   =========================== */
+/* DOM + estado */
 const els = {
   svgWrap: document.getElementById("svgWrap"),
   svg: document.getElementById("chartSvg"),
@@ -704,7 +704,6 @@ const els = {
 let app = {
   prepared: null,
   years: [],
-  yearToIndex: new Map(),
   allLabels: [],
   labelsMain: [],
   x999Labels: [],
@@ -712,18 +711,18 @@ let app = {
 
   colorMap: new Map(),
   valuesByLabel: new Map(),
-  visible: new Map(),
 
+  focusSet: null,
+  hoverLabel: null,
   scaleMode: "exp",
   crosshairMode: false,
   hoverFocus: false,
-  pinnedFocus: null,
-  hoverLabel: null,
+
+  pathEls: new Map(),
+  legendEls: new Map(),
 };
 
-function setButtonState(btn, isOn){
-  btn.classList.toggle("active", !!isOn);
-}
+function setButtonState(btn, isOn){ btn.classList.toggle("active", !!isOn); }
 
 function buildColorMap(prep){
   const { labels_main, x999_labels, series } = prep;
@@ -759,105 +758,78 @@ function buildAlignedValues(prep){
     }
     valuesByLabel.set(lab, arr);
   }
-  return { years, yearToIndex, valuesByLabel };
+  return { years, valuesByLabel };
 }
 
-function effectiveFocusLabel(){
-  if (app.pinnedFocus) return app.pinnedFocus;
-  if (app.hoverFocus) return app.hoverLabel;
+function getActiveFocusSet(){
+  if (app.focusSet && app.focusSet.size) return app.focusSet;
+  if (app.hoverFocus && app.hoverLabel) return new Set([app.hoverLabel]);
   return null;
 }
 
-/* ===========================
-   Leyenda (Políticas)
-   =========================== */
+/* Leyenda */
 function buildLegend(){
+  app.legendEls.clear();
   els.legend.innerHTML = "";
 
   const labelsToShow = [...app.labelsMain];
-  if (app.showPre2004){
-    labelsToShow.push(...app.x999Labels);
-  }
+  if (app.showPre2004) labelsToShow.push(...app.x999Labels);
 
   for (const lab of labelsToShow){
     if (!app.valuesByLabel.has(lab)) continue;
     const color = app.colorMap.get(lab) || PALETTE.text;
+    const badgeTxt = app.x999Labels.includes(lab) ? "pre-2004" : "main";
 
     const el = document.createElement("div");
     el.className = "item";
     el.dataset.label = lab;
-
-    const badgeTxt = app.x999Labels.includes(lab) ? "pre-2004" : "main";
     el.innerHTML = `
       <span class="sw" style="background:${color}"></span>
-      <span class="nm">${lab}</span>
+      <span class="nm" title="${lab}">${lab}</span>
       <span class="badge">${badgeTxt}</span>
     `;
-
-    const isVis = app.visible.get(lab) !== false;
-    el.classList.toggle("muted", !isVis);
-
-    el.addEventListener("click", ()=>{
-      const now = !(app.visible.get(lab) !== false);
-      app.visible.set(lab, now);
-      el.classList.toggle("muted", !now);
-      draw();
-    });
-
-    el.addEventListener("dblclick", (e)=>{
-      e.preventDefault();
-      togglePinnedFocus(lab);
-    });
-
+    el.addEventListener("click", (ev)=> toggleFocusLabel(lab, !!ev.shiftKey));
+    app.legendEls.set(lab, el);
     els.legend.appendChild(el);
   }
-
-  syncLegendFocusMuted();
+  applyFocusStyles(true);
 }
 
-function syncLegendFocusMuted(){
-  const focus = effectiveFocusLabel();
-  const items = els.legend.querySelectorAll(".item");
-  items.forEach(it=>{
-    const lab = it.dataset.label;
-    if (!focus){
-      const isVis = app.visible.get(lab) !== false;
-      it.classList.toggle("muted", !isVis);
-    } else {
-      const isVis = app.visible.get(lab) !== false;
-      const keep = (lab === focus);
-      it.classList.toggle("muted", !isVis || !keep);
-    }
-  });
+function toggleFocusLabel(lab, additive){
+  if (!additive){
+    if (app.focusSet && app.focusSet.size === 1 && app.focusSet.has(lab)) app.focusSet = null;
+    else app.focusSet = new Set([lab]);
+  } else {
+    if (!app.focusSet) app.focusSet = new Set();
+    if (app.focusSet.has(lab)) app.focusSet.delete(lab);
+    else app.focusSet.add(lab);
+    if (app.focusSet.size === 0) app.focusSet = null;
+  }
+  applyFocusStyles(true);
+}
+function resetFocus(){
+  app.focusSet = null;
+  applyFocusStyles(true);
 }
 
-/* ===========================
-   SVG rendering
-   =========================== */
+/* SVG render */
 function createSvgEl(tag, attrs={}){
   const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const [k,v] of Object.entries(attrs)){
-    el.setAttribute(k, String(v));
-  }
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, String(v));
   return el;
 }
-
 function formatPct(v){
   if (!Number.isFinite(v)) return "—";
   return v.toFixed(2) + "%";
 }
-
 function yTransform(v){
-  if (app.scaleMode === "log"){
-    return Math.log10(1 + Math.max(0, v));
-  }
+  if (app.scaleMode === "log") return Math.log10(1 + Math.max(0, v));
   return v;
 }
-
-function computeYMaxVisible(){
+function computeYMax(){
   let ymax = 1;
   for (const lab of app.allLabels){
-    if (app.visible.get(lab) === false) continue;
+    if (!app.showPre2004 && app.x999Labels.includes(lab)) continue;
     const arr = app.valuesByLabel.get(lab);
     if (!arr) continue;
     for (let i=0;i<arr.length;i++){
@@ -867,7 +839,6 @@ function computeYMaxVisible(){
   }
   return ymax;
 }
-
 function computeYTicks(ymax){
   if (app.scaleMode === "log"){
     const candidates = [0,1,2,5,10,15,20,30,40,50,60,80,100];
@@ -883,7 +854,6 @@ function computeYTicks(ymax){
   for (let v=0; v<=yTop+1e-9; v+=step) out.push(v);
   return out;
 }
-
 function computeXTicks(minYear, maxYear){
   const step = niceStepX(maxYear - minYear);
   const start = Math.ceil(minYear/step)*step;
@@ -893,23 +863,89 @@ function computeXTicks(minYear, maxYear){
   if (out[out.length-1] !== maxYear) out.push(maxYear);
   return Array.from(new Set(out)).sort((a,b)=>a-b);
 }
-
-function buildPathForLabel(lab, xScale, yScale){
+function buildSmoothPathForLabel(lab, xScale, yScale){
   const s = app.prepared.series.get(lab);
   if (!s) return "";
-  let d = "";
+
+  const segments = [];
+  let seg = [];
   for (let i=0;i<s.xs.length;i++){
-    const x = xScale(s.xs[i]);
-    const y = yScale(s.ys[i]);
+    const year = s.xs[i];
+    const v = s.ys[i];
+    const x = xScale(year);
+    const y = yScale(v);
     if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-    d += (d ? " L " : "M ") + x.toFixed(2) + " " + y.toFixed(2);
+
+    if (seg.length){
+      const prevYear = seg[seg.length-1].year;
+      if (year - prevYear > 1){
+        if (seg.length >= 2) segments.push(seg);
+        seg = [];
+      }
+    }
+    seg.push({ x, y, year });
+  }
+  if (seg.length >= 2) segments.push(seg);
+  if (!segments.length) return "";
+
+  function clampCtrlY(cy, y1, y2){
+    const mn = Math.min(y1, y2);
+    const mx = Math.max(y1, y2);
+    const span = mx - mn;
+    if (span < 1e-6) return cy;
+    return clamp(cy, mn - 0.25*span, mx + 0.25*span);
+  }
+
+  let d = "";
+  for (const pts of segments){
+    d += `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+    for (let i=0;i<pts.length-1;i++){
+      const p0 = (i-1 >= 0) ? pts[i-1] : pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i+1];
+      const p3 = (i+2 < pts.length) ? pts[i+2] : p2;
+
+      let c1x = p1.x + (p2.x - p0.x) / 6;
+      let c1y = p1.y + (p2.y - p0.y) / 6;
+      let c2x = p2.x - (p3.x - p1.x) / 6;
+      let c2y = p2.y - (p3.y - p1.y) / 6;
+
+      c1y = clampCtrlY(c1y, p1.y, p2.y);
+      c2y = clampCtrlY(c2y, p1.y, p2.y);
+
+      d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
   }
   return d;
 }
 
-let lastGeom = null;
+let geom = null;
 let rafPending = false;
 let lastPointer = null;
+let lastFocusKey = "";
+
+function focusKey(set){
+  if (!set || !set.size) return "";
+  return Array.from(set).sort().join("|");
+}
+function applyFocusStyles(force=false){
+  const set = getActiveFocusSet();
+  const key = focusKey(set);
+  if (!force && key === lastFocusKey) return;
+  lastFocusKey = key;
+
+  for (const [lab, path] of app.pathEls.entries()){
+    const isFocus = !!set && set.has(lab);
+    const opacity = !set ? 1.0 : (isFocus ? 1.0 : 0.12);
+    const width   = !set ? 2.0 : (isFocus ? 3.0 : 1.5);
+    path.setAttribute("opacity", String(opacity));
+    path.setAttribute("stroke-width", String(width));
+  }
+  for (const [lab, el] of app.legendEls.entries()){
+    if (!set) el.classList.remove("muted");
+    else el.classList.toggle("muted", !set.has(lab));
+  }
+}
 
 function draw(){
   if (!app.prepared) return;
@@ -922,6 +958,7 @@ function draw(){
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("preserveAspectRatio", "none");
   svg.innerHTML = "";
+  app.pathEls.clear();
 
   const margin = { l: 74, r: 18, t: 18, b: 56 };
   const plotW = Math.max(10, w - margin.l - margin.r);
@@ -931,139 +968,86 @@ function draw(){
   const minYear = years[0], maxYear = years[years.length-1];
 
   const xScale = (year)=> margin.l + ((year - minYear) / (maxYear - minYear)) * plotW;
-  const xInv = (px)=> minYear + ((px - margin.l) / plotW) * (maxYear - minYear);
+  const xInv   = (px)=> minYear + ((px - margin.l) / plotW) * (maxYear - minYear);
 
-  const yMaxOrig = computeYMaxVisible();
-  const yTicks = computeYTicks(yMaxOrig);
-
+  const yMax = computeYMax();
+  const yTicks = computeYTicks(yMax);
   const yMaxT = Math.max(0.0001, Math.max(...yTicks.map(v => yTransform(v))));
   const yScale = (v)=> margin.t + plotH - (yTransform(v) / yMaxT) * plotH;
 
-  lastGeom = { w,h, margin, plotW, plotH, minYear, maxYear, xScale, xInv, yScale, yTicks, yMaxOrig, yMaxT };
+  geom = { w,h, margin, plotW, plotH, minYear, maxYear, xScale, xInv, yScale, yTicks };
 
-  svg.appendChild(createSvgEl("rect", { x:0, y:0, width:w, height:h, fill:"rgba(0,0,0,0)" }));
-
-  const gGrid = createSvgEl("g", {});
-  const gAxes = createSvgEl("g", {});
-  const gLines = createSvgEl("g", {});
-  const gOverlay = createSvgEl("g", {});
+  const gGrid = createSvgEl("g");
+  const gAxes = createSvgEl("g");
+  const gLines = createSvgEl("g");
+  const gOverlay = createSvgEl("g");
 
   const xTicks = computeXTicks(minYear, maxYear);
 
-  for (const yy of xTicks){
-    const x = xScale(yy);
-    gGrid.appendChild(createSvgEl("line", {
-      x1:x, y1:margin.t, x2:x, y2:margin.t+plotH,
-      stroke:"rgba(74,74,74,.38)", "stroke-width":1
-    }));
-    const t = createSvgEl("text", {
-      x:x, y: margin.t+plotH+18,
-      fill:"rgba(176,176,176,.95)",
-      "text-anchor":"middle",
-      "font-size": 12,
-      "font-family":"Arial, system-ui, sans-serif",
-    });
-    t.textContent = yy;
+  for (const yr of xTicks){
+    const x = xScale(yr);
+    gGrid.appendChild(createSvgEl("line", { x1:x, y1:margin.t, x2:x, y2:margin.t+plotH, stroke:"rgba(74,74,74,.38)", "stroke-width":1 }));
+    const t = createSvgEl("text", { x:x, y: margin.t+plotH+18, fill:"rgba(176,176,176,.95)", "text-anchor":"middle", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+    t.textContent = yr;
     gAxes.appendChild(t);
   }
-
-  for (const tval of yTicks){
-    const y = yScale(tval);
-    gGrid.appendChild(createSvgEl("line", {
-      x1:margin.l, y1:y, x2:margin.l+plotW, y2:y,
-      stroke:"rgba(74,74,74,.38)", "stroke-width":1
-    }));
-    const tx = createSvgEl("text", {
-      x: margin.l-10, y: y+4,
-      fill:"rgba(176,176,176,.95)",
-      "text-anchor":"end",
-      "font-size": 12,
-      "font-family":"Arial, system-ui, sans-serif",
-    });
-    tx.textContent = tval;
+  for (const tv of yTicks){
+    const y = yScale(tv);
+    gGrid.appendChild(createSvgEl("line", { x1:margin.l, y1:y, x2:margin.l+plotW, y2:y, stroke:"rgba(74,74,74,.38)", "stroke-width":1 }));
+    const tx = createSvgEl("text", { x: margin.l-10, y: y+4, fill:"rgba(176,176,176,.95)", "text-anchor":"end", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+    tx.textContent = tv;
     gAxes.appendChild(tx);
   }
 
-  gAxes.appendChild(createSvgEl("line", {
-    x1: margin.l, y1: margin.t+plotH, x2: margin.l+plotW, y2: margin.t+plotH,
-    stroke:"rgba(176,176,176,.7)", "stroke-width":1.25
-  }));
-  gAxes.appendChild(createSvgEl("line", {
-    x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
-    stroke:"rgba(176,176,176,.7)", "stroke-width":1.25
-  }));
+  gAxes.appendChild(createSvgEl("line", { x1: margin.l, y1: margin.t+plotH, x2: margin.l+plotW, y2: margin.t+plotH, stroke:"rgba(176,176,176,.7)", "stroke-width":1.25 }));
+  gAxes.appendChild(createSvgEl("line", { x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH, stroke:"rgba(176,176,176,.7)", "stroke-width":1.25 }));
 
-  const xTitle = createSvgEl("text", {
-    x: margin.l + plotW/2, y: margin.t+plotH+42,
-    fill:"rgba(176,176,176,.95)",
-    "text-anchor":"middle",
-    "font-size": 13,
-    "font-family":"Arial, system-ui, sans-serif",
-  });
+  const xTitle = createSvgEl("text", { x: margin.l + plotW/2, y: margin.t+plotH+42, fill:"rgba(176,176,176,.95)", "text-anchor":"middle", "font-size":13, "font-family":"Arial, system-ui, sans-serif" });
   xTitle.textContent = "Año";
   gAxes.appendChild(xTitle);
 
   const yTitle = createSvgEl("text", {
-    x: 18, y: margin.t + plotH/2,
-    fill:"rgba(176,176,176,.95)",
-    "text-anchor":"middle",
-    "font-size": 13,
-    "font-family":"Arial, system-ui, sans-serif",
+    x: 18, y: margin.t + plotH/2, fill:"rgba(176,176,176,.95)",
+    "text-anchor":"middle", "font-size":13, "font-family":"Arial, system-ui, sans-serif",
     transform: `rotate(-90 18 ${margin.t + plotH/2})`
   });
   yTitle.textContent = "Porcentaje del total (%)";
   gAxes.appendChild(yTitle);
 
-  const focus = effectiveFocusLabel();
   for (const lab of app.allLabels){
-    const d = buildPathForLabel(lab, xScale, yScale);
+    if (!app.showPre2004 && app.x999Labels.includes(lab)) continue;
+
+    const d = buildSmoothPathForLabel(lab, xScale, yScale);
     if (!d) continue;
 
-    const isVis = app.visible.get(lab) !== false;
-    const isFocus = !!focus && (lab === focus);
-
-    const opacity = !isVis ? 0 : (!focus ? 1.0 : (isFocus ? 1.0 : 0.12));
-    const strokeW = !focus ? 2.0 : (isFocus ? 3.0 : 1.5);
-
     const path = createSvgEl("path", {
-      d,
-      fill:"none",
+      d, fill:"none",
       stroke: app.colorMap.get(lab) || "rgba(176,176,176,.7)",
-      "stroke-width": strokeW,
+      "stroke-width": 2.0,
       "stroke-linejoin":"round",
       "stroke-linecap":"round",
       "vector-effect":"non-scaling-stroke",
-      opacity: opacity,
+      opacity: 1.0,
       "data-label": lab,
       style: "pointer-events:none;"
     });
+    app.pathEls.set(lab, path);
     gLines.appendChild(path);
   }
 
   const crosshair = createSvgEl("line", {
     x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
-    stroke: "rgba(254,247,2,.55)",
-    "stroke-width": 1.5,
-    opacity: 0,
-    "vector-effect":"non-scaling-stroke",
-    id: "crosshairLine",
+    stroke: "rgba(254,247,2,.55)", "stroke-width": 1.5,
+    opacity: 0, "vector-effect":"non-scaling-stroke", id: "crosshairLine",
   });
   const dot = createSvgEl("circle", {
-    cx: margin.l, cy: margin.t,
-    r: 4.5,
-    fill: "rgba(254,247,2,.95)",
-    stroke: "rgba(0,0,0,.55)",
-    "stroke-width": 1,
-    opacity: 0,
-    id: "hoverDot",
+    cx: margin.l, cy: margin.t, r: 4.5,
+    fill: "rgba(254,247,2,.95)", stroke: "rgba(0,0,0,.55)",
+    "stroke-width": 1, opacity: 0, id:"hoverDot"
   });
-
   const hit = createSvgEl("rect", {
-    x: margin.l, y: margin.t,
-    width: plotW, height: plotH,
-    fill: "rgba(0,0,0,0)",
-    id: "hitRect",
-    style: "cursor:crosshair;"
+    x: margin.l, y: margin.t, width: plotW, height: plotH,
+    fill: "rgba(0,0,0,0)", id: "hitRect", style: "cursor:crosshair;"
   });
 
   gOverlay.appendChild(crosshair);
@@ -1075,15 +1059,13 @@ function draw(){
   svg.appendChild(gLines);
   svg.appendChild(gOverlay);
 
-  syncLegendFocusMuted();
-
-  if (lastPointer){
-    handlePointer(lastPointer, true);
-  }
-
   attachPointerHandlers();
+  applyFocusStyles(true);
+
+  if (lastPointer) handlePointer(lastPointer, true);
 }
 
+/* tooltip + pointer */
 function svgPointFromEvent(ev){
   const rect = els.svg.getBoundingClientRect();
   const vb = els.svg.viewBox.baseVal;
@@ -1093,22 +1075,21 @@ function svgPointFromEvent(ev){
   const y = (ev.clientY - rect.top) * sy;
   return { x, y };
 }
-
 function nearestVisibleLabelAtYearIdx(yearIdx, xPix, yPix){
   let best = null;
   let bestDist = Infinity;
 
-  for (const lab of app.allLabels){
-    if (app.visible.get(lab) === false) continue;
+  const year = app.years[yearIdx];
+  const xYear = geom.xScale(year);
 
+  for (const lab of app.pathEls.keys()){
     const arr = app.valuesByLabel.get(lab);
     if (!arr) continue;
     const v = arr[yearIdx];
     if (!Number.isFinite(v)) continue;
+    const yy = geom.yScale(v);
 
-    const yy = lastGeom.yScale(v);
-
-    const dx = Math.abs(xPix - lastGeom.xScale(app.years[yearIdx]));
+    const dx = Math.abs(xPix - xYear);
     const dy = Math.abs(yPix - yy);
     const d = Math.hypot(dx, dy);
     if (d < bestDist){
@@ -1118,27 +1099,48 @@ function nearestVisibleLabelAtYearIdx(yearIdx, xPix, yPix){
   }
   return best;
 }
-
 function buildTooltipAll(yearIdx){
   const year = app.years[yearIdx];
-  const rows = [];
+  const focus = app.focusSet && app.focusSet.size ? new Set(app.focusSet) : null;
 
-  for (const lab of app.allLabels){
-    if (app.visible.get(lab) === false) continue;
+  const rows = [];
+  const rowsNaN = [];
+
+  for (const lab of app.pathEls.keys()){
     const arr = app.valuesByLabel.get(lab);
-    if (!arr) continue;
-    const v = arr[yearIdx];
-    rows.push({ lab, v, color: app.colorMap.get(lab) || PALETTE.text });
+    const v = arr ? arr[yearIdx] : NaN;
+    const row = { lab, v, color: app.colorMap.get(lab) || PALETTE.text };
+    if (Number.isFinite(v)) rows.push(row);
+    else rowsNaN.push(row);
+  }
+  rows.sort((a,b)=> b.v - a.v);
+
+  const out = [];
+
+  if (focus){
+    const f = rows.filter(r => focus.has(r.lab));
+    f.sort((a,b)=> b.v - a.v);
+    for (const r of f){
+      if (out.length >= 15) break;
+      out.push(r);
+    }
+  }
+  for (const r of rows){
+    if (out.length >= 15) break;
+    if (focus && focus.has(r.lab)) continue;
+    out.push(r);
+  }
+  if (out.length < 15){
+    rowsNaN.sort((a,b)=> a.lab.localeCompare(b.lab, "es"));
+    for (const r of rowsNaN){
+      if (out.length >= 15) break;
+      if (focus && focus.has(r.lab)) continue;
+      out.push(r);
+    }
   }
 
-  rows.sort((a,b)=>{
-    const av = Number.isFinite(a.v) ? a.v : -1;
-    const bv = Number.isFinite(b.v) ? b.v : -1;
-    return bv - av;
-  });
-
   let html = `<div class="ttYear">Año ${year}</div>`;
-  for (const r of rows){
+  for (const r of out){
     html += `
       <div class="ttRow">
         <span class="ttSw" style="background:${r.color}"></span>
@@ -1149,7 +1151,6 @@ function buildTooltipAll(yearIdx){
   }
   return html;
 }
-
 function buildTooltipSingle(yearIdx, lab, v){
   const year = app.years[yearIdx];
   const color = app.colorMap.get(lab) || PALETTE.text;
@@ -1162,7 +1163,6 @@ function buildTooltipSingle(yearIdx, lab, v){
     </div>
   `;
 }
-
 function placeTooltip(xPix, yPix){
   const tip = els.tooltip;
   const wrapRect = els.svgWrap.getBoundingClientRect();
@@ -1191,25 +1191,24 @@ function placeTooltip(xPix, yPix){
   tip.style.left = left + "px";
   tip.style.top  = top + "px";
 }
-
 function hideTooltipAndGuides(){
   els.tooltip.style.display = "none";
   const ch = els.svg.querySelector("#crosshairLine");
   const dot = els.svg.querySelector("#hoverDot");
   if (ch) ch.setAttribute("opacity", "0");
   if (dot) dot.setAttribute("opacity", "0");
-  app.hoverLabel = null;
-  if (app.hoverFocus && !app.pinnedFocus){
-    draw();
+
+  if (app.hoverLabel !== null){
+    app.hoverLabel = null;
+    applyFocusStyles();
   }
 }
-
-function handlePointer(ev, fromRedraw=false){
-  if (!lastGeom) return;
+function handlePointer(ev){
+  if (!geom) return;
   lastPointer = ev;
 
   const p = svgPointFromEvent(ev);
-  const { margin, plotW, plotH } = lastGeom;
+  const { margin, plotW, plotH } = geom;
 
   const inside = (p.x >= margin.l && p.x <= margin.l + plotW && p.y >= margin.t && p.y <= margin.t + plotH);
   if (!inside){
@@ -1217,10 +1216,10 @@ function handlePointer(ev, fromRedraw=false){
     return;
   }
 
-  const yearApprox = lastGeom.xInv(p.x);
+  const yearApprox = geom.xInv(p.x);
   const yearIdx = binarySearchNearest(app.years, yearApprox);
   const year = app.years[yearIdx];
-  const xPix = lastGeom.xScale(year);
+  const xPix = geom.xScale(year);
 
   const ch = els.svg.querySelector("#crosshairLine");
   const dot = els.svg.querySelector("#hoverDot");
@@ -1235,22 +1234,19 @@ function handlePointer(ev, fromRedraw=false){
     placeTooltip(p.x, p.y);
 
     const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
-    if (pick && pick.d <= 16){
-      app.hoverLabel = pick.lab;
-      if (dot){
+    const newHover = (pick && pick.d <= 16) ? pick.lab : null;
+
+    if (dot){
+      if (pick && pick.d <= 16){
         dot.setAttribute("cx", xPix);
         dot.setAttribute("cy", pick.yy);
         dot.setAttribute("opacity", "1");
-      }
-      if (app.hoverFocus && !app.pinnedFocus && !fromRedraw){
-        draw();
-      }
-    } else {
-      app.hoverLabel = null;
-      if (dot) dot.setAttribute("opacity", "0");
-      if (app.hoverFocus && !app.pinnedFocus && !fromRedraw){
-        draw();
-      }
+      } else dot.setAttribute("opacity", "0");
+    }
+
+    if (newHover !== app.hoverLabel){
+      app.hoverLabel = newHover;
+      if (app.hoverFocus && !(app.focusSet && app.focusSet.size)) applyFocusStyles();
     }
     return;
   }
@@ -1259,11 +1255,6 @@ function handlePointer(ev, fromRedraw=false){
   if (!pick || pick.d > 14){
     hideTooltipAndGuides();
     return;
-  }
-
-  app.hoverLabel = pick.lab;
-  if (app.hoverFocus && !app.pinnedFocus && !fromRedraw){
-    draw();
   }
 
   if (dot){
@@ -1275,66 +1266,12 @@ function handlePointer(ev, fromRedraw=false){
 
   els.tooltip.innerHTML = buildTooltipSingle(yearIdx, pick.lab, pick.v);
   placeTooltip(xPix, pick.yy);
+
+  if (pick.lab !== app.hoverLabel){
+    app.hoverLabel = pick.lab;
+    if (app.hoverFocus && !(app.focusSet && app.focusSet.size)) applyFocusStyles();
+  }
 }
-
-function togglePinnedFocus(lab){
-  if (app.pinnedFocus === lab){
-    app.pinnedFocus = null;
-  } else {
-    app.pinnedFocus = lab;
-  }
-  draw();
-}
-
-/* ===========================
-   Eventos UI
-   =========================== */
-els.btnPre2004.addEventListener("click", ()=>{
-  app.showPre2004 = !app.showPre2004;
-  setButtonState(els.btnPre2004, app.showPre2004);
-
-  for (const lab of app.x999Labels){
-    app.visible.set(lab, app.showPre2004);
-  }
-
-  if (!app.showPre2004 && app.pinnedFocus && app.x999Labels.includes(app.pinnedFocus)){
-    app.pinnedFocus = null;
-  }
-
-  buildLegend();
-  draw();
-});
-
-els.btnScale.addEventListener("click", ()=>{
-  app.scaleMode = (app.scaleMode === "exp") ? "log" : "exp";
-  els.btnScale.textContent = (app.scaleMode === "exp") ? "Escala: Exponencial" : "Escala: Logarítmica";
-  setButtonState(els.btnScale, app.scaleMode === "log");
-  draw();
-});
-
-els.btnCrosshair.addEventListener("click", ()=>{
-  app.crosshairMode = !app.crosshairMode;
-  els.btnCrosshair.textContent = app.crosshairMode ? "Línea vertical: ON" : "Línea vertical: OFF";
-  setButtonState(els.btnCrosshair, app.crosshairMode);
-  hideTooltipAndGuides();
-});
-
-els.btnHoverFocus.addEventListener("click", ()=>{
-  app.hoverFocus = !app.hoverFocus;
-  els.btnHoverFocus.textContent = app.hoverFocus ? "Resaltar al pasar: ON" : "Resaltar al pasar: OFF";
-  setButtonState(els.btnHoverFocus, app.hoverFocus);
-  app.hoverLabel = null;
-  draw();
-});
-
-els.btnResetFocus.addEventListener("click", ()=>{
-  app.pinnedFocus = null;
-  app.hoverLabel = null;
-  hideTooltipAndGuides();
-  draw();
-});
-
-/* pointer handlers */
 function attachPointerHandlers(){
   const hit = els.svg.querySelector("#hitRect");
   if (!hit) return;
@@ -1351,65 +1288,91 @@ function attachPointerHandlers(){
       handlePointer(lastPointer);
     });
   };
-
-  hit.onmouseleave = ()=>{
-    hideTooltipAndGuides();
-  };
-
+  hit.onmouseleave = ()=> hideTooltipAndGuides();
   hit.onclick = (ev)=>{
-    if (!lastGeom) return;
+    if (!geom) return;
     const p = svgPointFromEvent(ev);
-    const { margin, plotW, plotH } = lastGeom;
-
+    const { margin, plotW, plotH } = geom;
     const inside = (p.x >= margin.l && p.x <= margin.l + plotW && p.y >= margin.t && p.y <= margin.t + plotH);
     if (!inside) return;
 
-    const yearApprox = lastGeom.xInv(p.x);
+    const yearApprox = geom.xInv(p.x);
     const yearIdx = binarySearchNearest(app.years, yearApprox);
     const year = app.years[yearIdx];
-    const xPix = lastGeom.xScale(year);
+    const xPix = geom.xScale(year);
 
     const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
     if (!pick || pick.d > 14) return;
 
-    togglePinnedFocus(pick.lab);
+    toggleFocusLabel(pick.lab, !!ev.shiftKey);
   };
 }
 
+/* UI events */
+els.btnPre2004.addEventListener("click", ()=>{
+  app.showPre2004 = !app.showPre2004;
+  setButtonState(els.btnPre2004, app.showPre2004);
+
+  if (!app.showPre2004 && app.focusSet){
+    for (const lab of Array.from(app.focusSet)){
+      if (app.x999Labels.includes(lab)) app.focusSet.delete(lab);
+    }
+    if (app.focusSet.size === 0) app.focusSet = null;
+  }
+
+  buildLegend();
+  draw();
+});
+els.btnScale.addEventListener("click", ()=>{
+  app.scaleMode = (app.scaleMode === "exp") ? "log" : "exp";
+  els.btnScale.textContent = (app.scaleMode === "exp") ? "Escala: Exponencial" : "Escala: Logarítmica";
+  setButtonState(els.btnScale, app.scaleMode === "log");
+  draw();
+});
+els.btnCrosshair.addEventListener("click", ()=>{
+  app.crosshairMode = !app.crosshairMode;
+  els.btnCrosshair.textContent = app.crosshairMode ? "Línea vertical: ON" : "Línea vertical: OFF";
+  setButtonState(els.btnCrosshair, app.crosshairMode);
+  hideTooltipAndGuides();
+});
+els.btnHoverFocus.addEventListener("click", ()=>{
+  app.hoverFocus = !app.hoverFocus;
+  els.btnHoverFocus.textContent = app.hoverFocus ? "Resaltar al pasar: ON" : "Resaltar al pasar: OFF";
+  setButtonState(els.btnHoverFocus, app.hoverFocus);
+  applyFocusStyles(true);
+});
+els.btnResetFocus.addEventListener("click", ()=>{
+  resetFocus();
+  hideTooltipAndGuides();
+});
+
 const ro = new ResizeObserver(()=>{ draw(); });
 ro.observe(els.svgWrap);
-
-/* ===========================
-   Carga de datos
-   =========================== */
-async function loadDataDefault(){
-  const polUrl = "pge_politicas.csv";
-  const meta1Url = "pge_politicas_metadata_1.csv";
-  const meta2Url = "pge_politicas_metadata_2.csv";
-
-  const [polTxt, m1Txt, m2Txt] = await Promise.all([
-    fetchText(polUrl),
-    fetchText(meta1Url),
-    fetchText(meta2Url),
-  ]);
-
-  const dfPol = parseCSV(polTxt);
-  const dfM1 = parseCSV(m1Txt);
-  const dfM2 = parseCSV(m2Txt);
-
-  const prep = prepararSeriesPct(dfPol, dfM1, dfM2);
-  if (!prep) throw new Error("Los CSV se cargaron pero no hay filas válidas.");
-  return prep;
-}
 
 function showError(msg){
   els.errorBox.style.display = "flex";
   els.errorBox.textContent = msg;
 }
+async function loadDataDefault(){
+  const polUrl = "pge_politicas.csv";
+  const meta1Url = "pge_politicas_metadata_1.csv";
+  const meta2Url = "pge_politicas_metadata_2.csv"; // se carga por compatibilidad
 
-/* ===========================
-   Inicio
-   =========================== */
+  const [polTxt, m1Txt] = await Promise.all([
+    fetchText(polUrl),
+    fetchText(meta1Url),
+    fetchText(meta2Url).catch(()=>""), // no rompe si no existe, pero tú lo tienes
+  ]);
+
+  const dfPol = parseCSV(polTxt);
+  const dfM1 = parseCSV(m1Txt);
+
+  const prep = prepararSeriesPct(dfPol, dfM1);
+  if (!prep) throw new Error("Los CSV se cargaron pero no hay filas válidas.");
+  return prep;
+}
+
+/* init */
 (async function init(){
   try{
     const prep = await loadDataDefault();
@@ -1417,19 +1380,18 @@ function showError(msg){
 
     app.labelsMain = prep.labels_main;
     app.x999Labels = prep.x999_labels;
-    app.allLabels = Array.from(prep.series.keys());
+
+    const set = new Set();
+    const ordered = [];
+    for (const lab of app.labelsMain){ if (!set.has(lab)) { set.add(lab); ordered.push(lab); } }
+    for (const lab of prep.series.keys()){ if (!set.has(lab)) { set.add(lab); ordered.push(lab); } }
+    app.allLabels = ordered;
 
     app.colorMap = buildColorMap(prep);
 
     const aligned = buildAlignedValues(prep);
     app.years = aligned.years;
-    app.yearToIndex = aligned.yearToIndex;
     app.valuesByLabel = aligned.valuesByLabel;
-
-    for (const lab of app.allLabels){
-      const isX = app.x999Labels.includes(lab);
-      app.visible.set(lab, !isX);
-    }
 
     setButtonState(els.btnPre2004, false);
     setButtonState(els.btnScale, false);
@@ -1440,7 +1402,7 @@ function showError(msg){
     draw();
   } catch (e){
     console.error(e);
-    showError("No puedo cargar los CSV necesarios (pge_politicas.csv, pge_politicas_metadata_1.csv, pge_politicas_metadata_2.csv).");
+    showError("No puedo cargar los CSV necesarios (pge_politicas.csv, pge_politicas_metadata_1.csv, pge_politicas_metadata_1.csv).");
   }
 })();
 </script>
