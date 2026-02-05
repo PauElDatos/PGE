@@ -307,6 +307,76 @@
       .svgWrap{ height: 520px; min-height: 520px; }
       .pc{ overflow:visible; }
     }
+  
+    /* =====================
+       PGE: estilos para que la vista sea igual a "index funcional.html"
+       (se aplican solo dentro de #viewPGE)
+       ===================== */
+    #viewPGE .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+      color:var(--text);
+      border-radius:12px;
+      padding:9px 10px;
+      font-size: calc(12px * var(--uiScale));
+      cursor:pointer;
+      transition:.12s transform ease, .12s border-color ease, .12s color ease, .12s background ease;
+      white-space:nowrap;
+      user-select:none;
+    }
+    #viewPGE .btn:hover{ border-color: rgba(254,247,2,.35); color:#fff; transform: translateY(-1px); }
+    #viewPGE .btn.active{
+      border-color: rgba(254,247,2,.55);
+      color: #111;
+      background: rgba(254,247,2,.92);
+    }
+
+    #viewPGE .legend{ display:flex; flex-direction:column; gap:8px; }
+    #viewPGE .item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      background: rgba(0,0,0,.10);
+      cursor:pointer;
+      user-select:none;
+      box-shadow:none;
+    }
+    #viewPGE .item:hover{ border-color: rgba(254,247,2,.25); }
+    #viewPGE .sw{ width:12px; height:12px; border-radius:3px; flex:0 0 auto; }
+    #viewPGE .nm{
+      flex:1 1 auto;
+      font-size: calc(12px * var(--uiScale));
+      line-height:1.15;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    #viewPGE .badge{
+      font-size: calc(10px * var(--uiScale));
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      opacity:.85;
+      flex:0 0 auto;
+    }
+    #viewPGE .muted{ opacity:.35; }
+
+    #viewPGE .chartPc{ display:flex; flex-direction:column; gap:10px; overflow:hidden; }
+    #viewPGE .svgWrap{
+      position:relative;
+      flex: 1 1 0;
+      min-height:0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(0,0,0,.08);
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    #viewPGE #chartSvg{ width:100%; height:100%; display:block; }
+
   </style>
 </head>
 
@@ -317,7 +387,7 @@
       <div class="tabs" role="tablist" aria-label="Secciones">
         <button class="btn tab on" data-view="pge" role="tab" aria-selected="true">Presupuestos generales del Estado</button>
         <button class="btn tab" data-view="gb" role="tab" aria-selected="false">Gasto vs beneficio</button>
-        <button class="btn tab" data-view="pa" role="tab" aria-selected="false">Poder adquisitivo</button>
+        <button class="btn tab" data-view="pa" role="tab" aria-selected="false">Presión fiscal</button>
       </div>
     </div>
   </header>
@@ -328,7 +398,7 @@
       <div class="ph">
         <div class="ttl">Políticas</div>
         <div class="sub">
-          <button class="btn" id="btnPre2004" title="Mostrar/ocultar partidas anteriores a 2004">Anteriores a 2004</button>
+          <button class="btn" id="btnPre2004" title="Mostrar/ocultar partidas X999 (anteriores a 2004)">Anteriores a 2004</button>
         </div>
       </div>
       <div class="pc">
@@ -344,7 +414,7 @@
 
       <div class="pc chartPc">
         <div class="svgWrap" id="svgWrap">
-          <svg id="chartSvg" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de porcentaje del presupuesto por política y año"></svg>
+          <svg id="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de porcentaje del presupuesto por política y año"></svg>
           <div class="tooltip" id="tooltip" style="display:none;"></div>
           <div class="errorBox" id="errorBox" style="display:none;"></div>
         </div>
@@ -402,7 +472,7 @@
     </section>
   </main>
 
-  <!-- ===================== VISTA 3: Poder adquisitivo ===================== -->
+  <!-- ===================== VISTA 3: Presión fiscal ===================== -->
   <main id="viewPA" class="view">
     <section class="panel">
       <div class="ph">
@@ -487,10 +557,52 @@ function normHeader(s){
 function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 function toNum(v){
   if (v === null || v === undefined) return NaN;
-  const s = String(v).replace(/\./g,"").replace(",",".").trim();
+  if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+
+  let s = String(v).trim();
+  if (!s) return NaN;
+
+  // Normaliza espacios (incluye NBSP) y símbolos comunes
+  s = s.replace(/\u00a0/g, "").replace(/\s+/g, "");
+
+  // Interpreta tanto ES/EU como US:
+  //  - "1.234,56" => 1234.56
+  //  - "1,234.56" => 1234.56
+  //  - "1234,56"  => 1234.56
+  //  - "1234.56"  => 1234.56
+  const hasDot = s.includes(".");
+  const hasComma = s.includes(",");
+
+  if (hasDot && hasComma){
+    const lastDot = s.lastIndexOf(".");
+    const lastComma = s.lastIndexOf(",");
+    const decSep = (lastDot > lastComma) ? "." : ",";
+    const thouSep = (decSep === ".") ? "," : ".";
+    s = s.split(thouSep).join("");
+    if (decSep === ",") s = s.replace(",", ".");
+  } else if (hasComma && !hasDot){
+    // Si hay un solo separador y parece decimal => coma decimal; si no => coma de miles
+    const parts = s.split(",");
+    if (parts.length === 2 && parts[1].length > 0 && parts[1].length <= 6){
+      s = parts[0] + "." + parts[1];
+    } else {
+      s = s.replace(/,/g, "");
+    }
+  } else if (hasDot && !hasComma){
+    const parts = s.split(".");
+    // Si hay múltiples puntos y todos los grupos posteriores son de 3 dígitos => puntos de miles
+    if (parts.length > 2 && parts.slice(1).every(p => p.length === 3)){
+      s = parts.join("");
+    }
+    // Si hay un solo punto lo dejamos como decimal (caso "35.12", "10500.00", etc.)
+  }
+
+  // Limpia caracteres no numéricos (mantén + - . y notación científica e/E)
+  s = s.replace(/[^0-9eE+\-\.]/g, "");
   const x = Number(s);
   return Number.isFinite(x) ? x : NaN;
 }
+
 function createSvgEl(tag, attrs={}){
   const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
   for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, String(v));
@@ -1232,227 +1344,1076 @@ function makeChartController(opts){
   };
 }
 
-/* ===================== Vista 1: PGE ===================== */
-(async function(){
-  const svg = document.getElementById("chartSvg");
-  const wrap = document.getElementById("svgWrap");
-  const tooltipEl = document.getElementById("tooltip");
-  const errorEl = document.getElementById("errorBox");
-  const legendEl = document.getElementById("legend");
+/* ===================== Vista 1: PGE (idéntica a index funcional.html) ===================== */
+(function(){
+'use strict';
+const PALETTE = { bg:"#252525", primary:"#FEF702", text:"#B0B0B0", grid:"#4A4A4A" };
 
-  const controls = {
-    btnScale: document.getElementById("btnScale"),
-    btnCrosshair: document.getElementById("btnCrosshair"),
-    btnHoverFocus: document.getElementById("btnHoverFocus"),
-    btnReset: document.getElementById("btnResetFocus"),
+function stripAccentsLower(s){
+  if (s === null || s === undefined) return "";
+  return String(s)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function normHeader(s){
+  return stripAccentsLower(s)
+    .replace(/[\s_\t\u00a0]/g,"")
+    .replace(/ó/g,"o").replace(/á/g,"a").replace(/é/g,"e")
+    .replace(/í/g,"i").replace(/ú/g,"u").replace(/ñ/g,"n");
+}
+function pickCol(cols, candidates, required=true){
+  const norm = new Map(cols.map(c => [normHeader(c), c]));
+  for (const cand of candidates){
+    const key = normHeader(cand);
+    if (norm.has(key)) return norm.get(key);
+  }
+  if (required) throw new Error("No se encontró ninguna de las columnas: " + candidates.join(", "));
+  return null;
+}
+function toNumber(x){
+  if (x === null || x === undefined) return NaN;
+  if (typeof x === "number") return x;
+  const s = String(x).trim()
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const v = Number(s);
+  return Number.isFinite(v) ? v : NaN;
+}
+function sortKeyId(idv){
+  const s = String(idv ?? "").trim();
+  let m = s.match(/^0*(\d+)$/);
+  if (m) return [0, Number(m[1]), s];
+  m = s.match(/^[xX](\d+)$/);
+  if (m) return [1, Number(m[1]), s];
+  return [2, 0, s];
+}
+function hsvToHex(h,s,v){
+  let r=0,g=0,b=0;
+  const i = Math.floor(h*6);
+  const f = h*6 - i;
+  const p = v*(1-s);
+  const q = v*(1-f*s);
+  const t = v*(1-(1-f)*s);
+  switch(i%6){
+    case 0: r=v; g=t; b=p; break;
+    case 1: r=q; g=v; b=p; break;
+    case 2: r=p; g=v; b=t; break;
+    case 3: r=p; g=q; b=v; break;
+    case 4: r=t; g=p; b=v; break;
+    case 5: r=v; g=p; b=q; break;
+  }
+  const toHex = (x)=> {
+    const n = Math.max(0, Math.min(255, Math.round(x*255)));
+    return n.toString(16).padStart(2,"0");
   };
-  const btnPre2004 = document.getElementById("btnPre2004");
+  return "#" + toHex(r)+toHex(g)+toHex(b);
+}
+function colorList(n, sat=0.9, val=1.0){
+  if (n<=0) return [];
+  const cols=[];
+  for (let i=0;i<n;i++){
+    cols.push(hsvToHex(i/n, sat, val));
+  }
+  return cols;
+}
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+function binarySearchNearest(sortedArr, target){
+  let lo=0, hi=sortedArr.length-1;
+  if (target <= sortedArr[0]) return 0;
+  if (target >= sortedArr[hi]) return hi;
+  while (hi - lo > 1){
+    const mid = (lo + hi) >> 1;
+    if (sortedArr[mid] === target) return mid;
+    if (sortedArr[mid] < target) lo = mid; else hi = mid;
+  }
+  return (Math.abs(sortedArr[lo] - target) <= Math.abs(sortedArr[hi] - target)) ? lo : hi;
+}
+function niceStepX(span){
+  if (span <= 10) return 1;
+  if (span <= 20) return 2;
+  if (span <= 40) return 5;
+  return 10;
+}
+function niceStepY(ymax){
+  if (ymax <= 20) return 2;
+  if (ymax <= 50) return 5;
+  return 10;
+}
 
-  const app = {
-    showPre2004: false,
-    seriesByKey: new Map(),   // key -> {xs,ys} pct
-    yearValueByKey: new Map(),// key -> Map(year->pct)
-    keyInfo: new Map(),       // key -> {label,color,pre2004,peak}
-    allKeys: [],
-    xDomain: {min: 1986, max: 2023},
-  };
-
-  function formatPct(v){ return Number.isFinite(v) ? (v.toFixed(2) + "%") : "—"; }
-
-  function buildSeriesList(){
-    const keys = app.allKeys.slice();
-    keys.sort((a,b)=> (app.keyInfo.get(b)?.peak||0) - (app.keyInfo.get(a)?.peak||0));
-
-    const out = [];
-    for (const k of keys){
-      const info = app.keyInfo.get(k);
-      if (!app.showPre2004 && info?.pre2004) continue;
-      out.push({
-        key: k,
-        label: info?.label || k,
-        color: info?.color || "rgba(176,176,176,.7)",
-        badge: info?.pre2004 ? "pre-2004" : "",
-        axis: "left"
-      });
+/* CSV */
+function splitCSVLine(line, sep){
+  const out = [];
+  let cur = "";
+  let inQ = false;
+  for (let i=0;i<line.length;i++){
+    const ch = line[i];
+    if (ch === '"'){
+      if (inQ && line[i+1] === '"'){ cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (!inQ && ch === sep){
+      out.push(cur);
+      cur = "";
+    } else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+function detectSep(firstLine){
+  const seps = [",",";","\t","|"];
+  let best = ",";
+  let bestCount = 1;
+  for (const s of seps){
+    const parts = splitCSVLine(firstLine, s);
+    if (parts.length > bestCount){
+      bestCount = parts.length;
+      best = s;
     }
-    return out;
+  }
+  return best;
+}
+function parseCSV(text){
+  text = text.replace(/^\uFEFF/, "");
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length>0);
+  if (!lines.length) return { cols:[], rows:[] };
+  const sep = detectSep(lines[0]);
+  const rawCols = splitCSVLine(lines[0], sep).map(c => c.replace(/\u00a0/g," ").trim());
+  const cols = rawCols;
+  const rows = [];
+  for (let i=1;i<lines.length;i++){
+    const parts = splitCSVLine(lines[i], sep);
+    const obj = {};
+    for (let j=0;j<cols.length;j++){
+      obj[cols[j]] = (parts[j] ?? "").replace(/\u00a0/g," ").trim();
+    }
+    rows.push(obj);
+  }
+  return { cols, rows };
+}
+async function fetchText(url){
+  const res = await fetch(url, { cache:"no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status + " al cargar " + url);
+  return await res.text();
+}
+
+/* prepararSeriesPct */
+const PENSIONS_LABEL = "Pensiones";
+const PENSIONS_PATTERNS = new Set(["pensiones"]);
+const OTROS_LABEL = "otros";
+
+const OLD31_EQUIV_LABEL = "Seguridad Social";
+const OLD31_CUTOFF_YEAR = 2005;
+const OLD31_POST2005_IDS = new Set(["21","22","23","25","29"]);
+const OLD31_POST2005_NAME_PATTERNS = new Set([
+  "pensiones",
+  "otras prestaciones economicas",
+  "servicios sociales y promocion social",
+  "desempleo",
+]);
+const OLD31_PRE2005_NAMES = new Set([
+  "seguridad social y proteccion social",
+  "seguridad y proteccion social",
+]);
+function isGestionSS(nameNorm){
+  return nameNorm.includes("gestion") && nameNorm.includes("seguridad social");
+}
+function prepararSeriesPct(dfPol, dfMeta1){
+  const colsPol = dfPol.cols;
+  const rowsPol = dfPol.rows;
+
+  const c_id   = pickCol(colsPol, ["id_politica", "id politica"]);
+  const c_year = pickCol(colsPol, ["año","ano","anio","year"]);
+  const c_pol  = pickCol(colsPol, ["politica","política"]);
+  const c_val  = pickCol(colsPol, ["presupuesto","presupuesto gasto","valor","importe"]);
+
+  const base = [];
+  for (const r of rowsPol){
+    const id = String(r[c_id] ?? "").trim();
+    const year = toNumber(r[c_year]);
+    const pol = String(r[c_pol] ?? "").trim();
+    const val = toNumber(r[c_val]);
+    if (!id || !Number.isFinite(year) || !pol || !Number.isFinite(val)) continue;
+    base.push({
+      id,
+      year: Math.trunc(year),
+      pol,
+      val,
+      pol_norm: stripAccentsLower(pol),
+      id_norm: String(id).trim(),
+    });
+  }
+  if (!base.length) return null;
+
+  const colsM1 = dfMeta1.cols;
+  const rowsM1 = dfMeta1.rows;
+  const c_m1_id  = pickCol(colsM1, ["id_politica"]);
+  const c_m1_pol = pickCol(colsM1, ["politica","política"]);
+
+  const meta1_sorted = rowsM1
+    .map(r => ({ id: String(r[c_m1_id] ?? "").trim(), pol: String(r[c_m1_pol] ?? "").trim() }))
+    .filter(r => r.id && r.pol)
+    .sort((a,b)=>{
+      const ka = sortKeyId(a.id);
+      const kb = sortKeyId(b.id);
+      return ka[0]-kb[0] || ka[1]-kb[1] || ka[2].localeCompare(kb[2]);
+    });
+
+  const id_to_name = new Map();
+  for (const row of meta1_sorted){
+    const idp = row.id;
+    const nm = row.pol;
+    if (!idp || idp === "X999") continue;
+    const nm_norm = stripAccentsLower(nm);
+    const label = (PENSIONS_PATTERNS.has(nm_norm) || idp === "05") ? PENSIONS_LABEL : nm;
+    if (!id_to_name.has(idp)) id_to_name.set(idp, label);
   }
 
-  function computeYMax(keys){
-    let ymax = 1;
-    for (const k of keys){
-      const ser = app.seriesByKey.get(k);
-      if (!ser) continue;
-      for (const v of ser.ys){
-        if (Number.isFinite(v)) ymax = Math.max(ymax, v);
+  function clasificar(idp, pol_name){
+    idp = String(idp ?? "").trim();
+    pol_name = String(pol_name ?? "").trim();
+    const pol_norm = stripAccentsLower(pol_name);
+
+    if (PENSIONS_PATTERNS.has(pol_norm) || idp === "05") return [PENSIONS_LABEL, "main"];
+    if (id_to_name.has(idp)) return [id_to_name.get(idp), "main"];
+    if (idp === "X999"){
+      const label = pol_name ? pol_name : OTROS_LABEL;
+      return [label, "x999"];
+    }
+    return [OTROS_LABEL, "otros"];
+  }
+
+  const gMap = new Map();
+  const labelTipo = new Map();
+  for (const r of base){
+    const [lab, tp] = clasificar(r.id, r.pol);
+    const key = lab + "||" + r.year;
+    gMap.set(key, (gMap.get(key) || 0) + r.val);
+    if (!labelTipo.has(lab)) labelTipo.set(lab, tp);
+  }
+
+  let g = [];
+  for (const [key, sum] of gMap.entries()){
+    const [lab, y] = key.split("||");
+    const year = Number(y);
+    const lab_norm = stripAccentsLower(lab);
+    g.push({
+      Label: lab,
+      Año: year,
+      Valor: sum,
+      Label_norm: lab_norm,
+      __is_gestion_ss: isGestionSS(lab_norm),
+    });
+  }
+
+  g = g.filter(row => {
+    if (row.Año < OLD31_CUTOFF_YEAR) return true;
+    const ln = row.Label_norm;
+    const isComp = (ln === "pensiones") || OLD31_POST2005_NAME_PATTERNS.has(ln) || row.__is_gestion_ss;
+    return !isComp;
+  });
+
+  g = g.filter(row => {
+    if (row.Año >= OLD31_CUTOFF_YEAR) return true;
+    return !OLD31_PRE2005_NAMES.has(row.Label_norm);
+  });
+
+  const preMap = new Map();
+  for (const r of base){
+    if (r.year < OLD31_CUTOFF_YEAR && OLD31_PRE2005_NAMES.has(r.pol_norm)){
+      preMap.set(r.year, (preMap.get(r.year)||0) + r.val);
+    }
+  }
+  const postMap = new Map();
+  for (const r of base){
+    if (r.year >= OLD31_CUTOFF_YEAR){
+      const isPost = OLD31_POST2005_IDS.has(r.id_norm) ||
+                     OLD31_POST2005_NAME_PATTERNS.has(r.pol_norm) ||
+                     isGestionSS(r.pol_norm);
+      if (isPost){
+        postMap.set(r.year, (postMap.get(r.year)||0) + r.val);
       }
     }
-    return ymax;
   }
 
-  function yTickBuilder(side, ymax){
-    if (side !== "left") return [];
-    if (ymax <= 10) return [0,1,2,3,4,5,6,8,10];
-    if (ymax <= 20) return [0,2,4,6,8,10,12,15,20];
-    if (ymax <= 40) return [0,5,10,15,20,25,30,35,40];
-    if (ymax <= 60) return [0,10,20,30,40,50,60];
-    return [0,10,20,30,40,50,60,80,100];
+  const comp = [];
+  for (const [year,val] of preMap.entries()) comp.push({ Label: OLD31_EQUIV_LABEL, Año: year, Valor: val });
+  for (const [year,val] of postMap.entries()) comp.push({ Label: OLD31_EQUIV_LABEL, Año: year, Valor: val });
+  comp.sort((a,b)=>a.Año-b.Año);
+
+  const g2 = g.map(r => ({ Label:r.Label, Año:r.Año, Valor:r.Valor })).concat(comp);
+
+  const totMap = new Map();
+  for (const r of base){
+    totMap.set(r.year, (totMap.get(r.year)||0) + r.val);
   }
 
-  function getValueAtYear(key, year){
-    const mp = app.yearValueByKey.get(key);
-    if (!mp) return null;
-    const v = mp.get(year);
-    return Number.isFinite(v) ? v : null;
-  }
-  function getSeriesForPath(key){
-    const info = app.keyInfo.get(key);
-    if (!app.showPre2004 && info?.pre2004) return null;
-    return app.seriesByKey.get(key) || null;
-  }
-
-  function tooltipSorter(a,b){
-    const va = (a.v === null || !Number.isFinite(a.v)) ? -1 : a.v;
-    const vb = (b.v === null || !Number.isFinite(b.v)) ? -1 : b.v;
-    return vb - va;
+  const pctRows = [];
+  for (const r of g2){
+    const total = totMap.get(r.Año) || NaN;
+    if (!Number.isFinite(total) || total === 0) continue;
+    pctRows.push({
+      Label: r.Label,
+      Año: r.Año,
+      Porcentaje: (r.Valor/total)*100,
+    });
   }
 
-  async function loadPGE(){
-    const [polTxt, m1Txt] = await Promise.all([
-      fetchText("pge_politicas.csv"),
-      fetchText("pge_politicas_metadata_1.csv").catch(() => ""),
-    ]);
+  const legend_labels = [];
+  for (const row of meta1_sorted){
+    const idp = row.id;
+    const nm = row.pol;
+    if (!idp || idp === "X999") continue;
+    const nm_norm = stripAccentsLower(nm);
+    const lab = (PENSIONS_PATTERNS.has(nm_norm) || idp === "05") ? PENSIONS_LABEL : nm;
+    if (!legend_labels.includes(lab)) legend_labels.push(lab);
+  }
+  if (!legend_labels.includes(OLD31_EQUIV_LABEL)) legend_labels.push(OLD31_EQUIV_LABEL);
+  if (!legend_labels.includes(OTROS_LABEL)) legend_labels.push(OTROS_LABEL);
 
-    const pol = parseCSV(polTxt);
-    const headers = pol.headers;
-    const cId = pickCol(headers, ["id_politica","id politica"]);
-    const cYear = pickCol(headers, ["año","ano","anio","year"]);
-    const cPol = pickCol(headers, ["politica","política","policy"]);
-    const cVal = pickCol(headers, ["presupuesto","presupuesto gasto","valor","importe","amount"]);
+  const labelsExist = new Set(pctRows.map(r => r.Label));
+  const labels_main = legend_labels.filter(lab => labelsExist.has(lab) || lab === OTROS_LABEL);
 
-    if (!cId || !cYear || !cPol || !cVal){
-      throw new Error("pge_politicas.csv: faltan columnas requeridas (id, año, política, presupuesto).");
-    }
+  const x999_labels = Array.from(labelTipo.entries())
+    .filter(([lab,tp]) => tp === "x999")
+    .map(([lab,_]) => lab)
+    .sort((a,b)=>a.localeCompare(b, "es"));
 
-    // meta name
-    let idToName = new Map();
-    if (m1Txt && m1Txt.trim()){
-      const m1 = parseCSV(m1Txt);
-      const mh = m1.headers;
-      const mId = pickCol(mh, ["id_politica","id politica"]);
-      const mPol = pickCol(mh, ["politica","política","policy"]);
-      if (mId && mPol){
-        for (const r of m1.rows){
-          const id = String(r[mId] ?? "").trim();
-          const nm = String(r[mPol] ?? "").trim();
-          if (id && nm) idToName.set(id, nm);
-        }
-      }
-    }
+  const byLabel = new Map();
+  for (const r of pctRows){
+    if (!byLabel.has(r.Label)) byLabel.set(r.Label, []);
+    byLabel.get(r.Label).push([r.Año, r.Porcentaje]);
+  }
+  const series = new Map();
+  let allYears = new Set();
 
-    const rows = [];
-    for (const r of pol.rows){
-      const id = String(r[cId] ?? "").trim();
-      const year = Math.round(toNum(r[cYear]));
-      const rawName = String(r[cPol] ?? "").trim();
-      const name = idToName.get(id) || rawName || id;
-      const val = toNum(r[cVal]);
-      if (!id || !Number.isFinite(year) || !Number.isFinite(val)) continue;
-      rows.push({ id, year, name, val });
-    }
-    if (!rows.length) throw new Error("pge_politicas.csv no tiene filas válidas.");
-
-    const minYear = rows.reduce((m,r)=>Math.min(m,r.year), Infinity);
-    const maxYear = rows.reduce((m,r)=>Math.max(m,r.year), -Infinity);
-    app.xDomain = { min: minYear, max: maxYear };
-
-    const totalByYear = new Map();
-    for (const r of rows){
-      totalByYear.set(r.year, (totalByYear.get(r.year)||0) + r.val);
-    }
-
-    const byKey = new Map();       // name -> Map(year->pct)
-    const minYearByKey = new Map();// name -> minYear
-    for (const r of rows){
-      const tot = totalByYear.get(r.year) || 0;
-      if (!(tot > 0)) continue;
-      const pct = (r.val / tot) * 100;
-      const key = r.name;
-
-      if (!byKey.has(key)) byKey.set(key, new Map());
-      byKey.get(key).set(r.year, pct);
-
-      minYearByKey.set(key, Math.min(minYearByKey.get(key) ?? Infinity, r.year));
-    }
-
-    const keys = Array.from(byKey.keys());
-    keys.sort((a,b)=> stripAccentsLower(a).localeCompare(stripAccentsLower(b)));
-
-    const colorMap = new Map();
-    for (let i=0;i<keys.length;i++){
-      colorMap.set(keys[i], makeHSVColor(i, keys.length));
-    }
-
-    app.seriesByKey.clear();
-    app.yearValueByKey.clear();
-    app.keyInfo.clear();
-
-    for (const k of keys){
-      const mp = byKey.get(k);
-      const xs = Array.from(mp.keys()).sort((a,b)=>a-b);
-      const ys = xs.map(x => mp.get(x));
-      app.seriesByKey.set(k, { xs, ys });
-      app.yearValueByKey.set(k, mp);
-
-      const minY = minYearByKey.get(k) ?? minYear;
-      const pre2004 = minY < 2004;
-      const peak = ys.reduce((m,v)=>Number.isFinite(v)?Math.max(m,v):m, 0);
-
-      app.keyInfo.set(k, { label:k, color:colorMap.get(k), pre2004, peak });
-    }
-    app.allKeys = keys;
+  for (const [lab, pts] of byLabel.entries()){
+    pts.sort((a,b)=>a[0]-b[0]);
+    if (pts.length < 2) continue;
+    const xs = pts.map(p=>p[0]);
+    const ys = pts.map(p=>p[1]);
+    xs.forEach(y=>allYears.add(y));
+    series.set(lab, { xs, ys });
   }
 
-  try{
-    await loadPGE();
-  } catch(e){
-    errorEl.style.display = "flex";
-    errorEl.textContent = e.message || String(e);
-    window.__pge = { onShow: ()=>{} };
+  const years = Array.from(allYears).sort((a,b)=>a-b);
+  return { series, labels_main, x999_labels, years };
+}
+
+/* DOM + estado */
+const els = {
+  svgWrap: document.getElementById("svgWrap"),
+  svg: document.getElementById("chartSvg"),
+  tooltip: document.getElementById("tooltip"),
+  legend: document.getElementById("legend"),
+  btnPre2004: document.getElementById("btnPre2004"),
+  btnScale: document.getElementById("btnScale"),
+  btnCrosshair: document.getElementById("btnCrosshair"),
+  btnHoverFocus: document.getElementById("btnHoverFocus"),
+  btnResetFocus: document.getElementById("btnResetFocus"),
+  errorBox: document.getElementById("errorBox"),
+};
+
+let app = {
+  prepared: null,
+  years: [],
+  allLabels: [],
+  labelsMain: [],
+  x999Labels: [],
+  showPre2004: false,
+
+  colorMap: new Map(),
+  valuesByLabel: new Map(),
+
+  focusSet: null,
+  hoverLabel: null,
+  scaleMode: "exp",
+  crosshairMode: false,
+  hoverFocus: false,
+
+  pathEls: new Map(),
+  legendEls: new Map(),
+};
+
+function setButtonState(btn, isOn){ btn.classList.toggle("active", !!isOn); }
+
+function buildColorMap(prep){
+  const { labels_main, x999_labels, series } = prep;
+
+  const mainCols = colorList(labels_main.length, 0.9, 1.0);
+  const cm = new Map();
+  labels_main.forEach((lab,i)=> cm.set(lab, mainCols[i] || PALETTE.text));
+
+  cm.set(OTROS_LABEL, "rgba(176,176,176,.85)");
+
+  const xCols = colorList(x999_labels.length, 0.35, 0.95);
+  x999_labels.forEach((lab,i)=> cm.set(lab, xCols[i] || "rgba(176,176,176,.55)"));
+
+  for (const lab of series.keys()){
+    if (!cm.has(lab)) cm.set(lab, "rgba(176,176,176,.7)");
+  }
+  return cm;
+}
+
+function buildAlignedValues(prep){
+  const years = prep.years;
+  const n = years.length;
+  const yearToIndex = new Map(years.map((y,i)=>[y,i]));
+  const valuesByLabel = new Map();
+
+  for (const [lab, s] of prep.series.entries()){
+    const arr = new Float64Array(n);
+    for (let i=0;i<n;i++) arr[i] = NaN;
+    for (let i=0;i<s.xs.length;i++){
+      const y = s.xs[i];
+      const idx = yearToIndex.get(y);
+      if (idx !== undefined) arr[idx] = s.ys[i];
+    }
+    valuesByLabel.set(lab, arr);
+  }
+  return { years, valuesByLabel };
+}
+
+function getActiveFocusSet(){
+  if (app.focusSet && app.focusSet.size) return app.focusSet;
+  if (app.hoverFocus && app.hoverLabel) return new Set([app.hoverLabel]);
+  return null;
+}
+
+/* Leyenda */
+function buildLegend(){
+  app.legendEls.clear();
+  els.legend.innerHTML = "";
+
+  const labelsToShow = [...app.labelsMain];
+  if (app.showPre2004) labelsToShow.push(...app.x999Labels);
+
+  for (const lab of labelsToShow){
+    if (!app.valuesByLabel.has(lab)) continue;
+    const color = app.colorMap.get(lab) || PALETTE.text;
+    const badgeTxt = app.x999Labels.includes(lab) ? "pre-2004" : "main";
+
+    const el = document.createElement("div");
+    el.className = "item";
+    el.dataset.label = lab;
+    el.innerHTML = `
+      <span class="sw" style="background:${color}"></span>
+      <span class="nm" title="${lab}">${lab}</span>
+      <span class="badge">${badgeTxt}</span>
+    `;
+    el.addEventListener("click", (ev)=> toggleFocusLabel(lab, !!ev.shiftKey));
+    app.legendEls.set(lab, el);
+    els.legend.appendChild(el);
+  }
+  applyFocusStyles(true);
+}
+
+function toggleFocusLabel(lab, additive){
+  if (!additive){
+    if (app.focusSet && app.focusSet.size === 1 && app.focusSet.has(lab)) app.focusSet = null;
+    else app.focusSet = new Set([lab]);
+  } else {
+    if (!app.focusSet) app.focusSet = new Set();
+    if (app.focusSet.has(lab)) app.focusSet.delete(lab);
+    else app.focusSet.add(lab);
+    if (app.focusSet.size === 0) app.focusSet = null;
+  }
+  applyFocusStyles(true);
+}
+function resetFocus(){
+  app.focusSet = null;
+  applyFocusStyles(true);
+}
+
+/* SVG render */
+function createSvgEl(tag, attrs={}){
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  return el;
+}
+function formatPct(v){
+  if (!Number.isFinite(v)) return "—";
+  return v.toFixed(2) + "%";
+}
+function yTransform(v){
+  if (app.scaleMode === "log") return Math.log10(1 + Math.max(0, v));
+  return v;
+}
+function computeYMax(){
+  let ymax = 1;
+  for (const lab of app.allLabels){
+    if (!app.showPre2004 && app.x999Labels.includes(lab)) continue;
+    const arr = app.valuesByLabel.get(lab);
+    if (!arr) continue;
+    for (let i=0;i<arr.length;i++){
+      const v = arr[i];
+      if (Number.isFinite(v)) ymax = Math.max(ymax, v);
+    }
+  }
+  return ymax;
+}
+function computeYTicks(ymax){
+  if (app.scaleMode === "log"){
+    const candidates = [0,1,2,5,10,15,20,30,40,50,60,80,100];
+    const t = candidates.filter(v => v <= ymax + 1e-9);
+    if (t.length < 4){
+      return [0, Math.max(1, Math.round(ymax/3)), Math.max(2, Math.round(2*ymax/3)), Math.ceil(ymax)];
+    }
+    return t;
+  }
+  const step = niceStepY(ymax);
+  const yTop = Math.max(10, Math.ceil(ymax/step)*step);
+  const out = [];
+  for (let v=0; v<=yTop+1e-9; v+=step) out.push(v);
+  return out;
+}
+function computeXTicks(minYear, maxYear){
+  const step = niceStepX(maxYear - minYear);
+  const start = Math.ceil(minYear/step)*step;
+  const out = [];
+  for (let y=start; y<=maxYear+1e-9; y+=step) out.push(y);
+  if (out[0] !== minYear) out.unshift(minYear);
+  if (out[out.length-1] !== maxYear) out.push(maxYear);
+  return Array.from(new Set(out)).sort((a,b)=>a-b);
+}
+function buildSmoothPathForLabel(lab, xScale, yScale){
+  const s = app.prepared.series.get(lab);
+  if (!s) return "";
+
+  // Construimos la curva con continuidad aunque falten años intermedios:
+  // conectamos todos los puntos existentes en orden cronológico.
+  const pts = [];
+  for (let i=0;i<s.xs.length;i++){
+    const year = s.xs[i];
+    const v = s.ys[i];
+    const x = xScale(year);
+    const y = yScale(v);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    pts.push({ x, y });
+  }
+  if (pts.length < 2) return "";
+
+  function clampCtrlY(cy, y1, y2){
+    const mn = Math.min(y1, y2);
+    const mx = Math.max(y1, y2);
+    const span = mx - mn;
+    if (span < 1e-6) return cy;
+    return clamp(cy, mn - 0.25*span, mx + 0.25*span);
+  }
+
+  let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+  for (let i=0;i<pts.length-1;i++){
+    const p0 = (i-1 >= 0) ? pts[i-1] : pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = (i+2 < pts.length) ? pts[i+2] : p2;
+
+    let c1x = p1.x + (p2.x - p0.x) / 6;
+    let c1y = p1.y + (p2.y - p0.y) / 6;
+    let c2x = p2.x - (p3.x - p1.x) / 6;
+    let c2y = p2.y - (p3.y - p1.y) / 6;
+
+    c1y = clampCtrlY(c1y, p1.y, p2.y);
+    c2y = clampCtrlY(c2y, p1.y, p2.y);
+
+    d += ` C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+
+let geom = null;
+let rafPending = false;
+let lastPointer = null;
+let lastFocusKey = "";
+
+function focusKey(set){
+  if (!set || !set.size) return "";
+  return Array.from(set).sort().join("|");
+}
+function applyFocusStyles(force=false){
+  const set = getActiveFocusSet();
+  const key = focusKey(set);
+  if (!force && key === lastFocusKey) return;
+  lastFocusKey = key;
+
+  for (const [lab, path] of app.pathEls.entries()){
+    const isFocus = !!set && set.has(lab);
+    const opacity = !set ? 1.0 : (isFocus ? 1.0 : 0.12);
+    const width   = !set ? 2.0 : (isFocus ? 3.0 : 1.5);
+    path.setAttribute("opacity", String(opacity));
+    path.setAttribute("stroke-width", String(width));
+  }
+  for (const [lab, el] of app.legendEls.entries()){
+    if (!set) el.classList.remove("muted");
+    else el.classList.toggle("muted", !set.has(lab));
+  }
+}
+
+function draw(){
+  if (!app.prepared) return;
+
+  const wrap = els.svgWrap;
+  const w = Math.max(420, wrap.clientWidth);
+  const h = Math.max(320, wrap.clientHeight);
+
+  const svg = els.svg;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.innerHTML = "";
+  app.pathEls.clear();
+
+  const margin = { l: 74, r: 18, t: 18, b: 56 };
+  const plotW = Math.max(10, w - margin.l - margin.r);
+  const plotH = Math.max(10, h - margin.t - margin.b);
+
+  const years = app.years;
+  const minYear = years[0], maxYear = years[years.length-1];
+
+  const xScale = (year)=> margin.l + ((year - minYear) / (maxYear - minYear)) * plotW;
+  const xInv   = (px)=> minYear + ((px - margin.l) / plotW) * (maxYear - minYear);
+
+  const yMax = computeYMax();
+  const yTicks = computeYTicks(yMax);
+  const yMaxT = Math.max(0.0001, Math.max(...yTicks.map(v => yTransform(v))));
+  const yScale = (v)=> margin.t + plotH - (yTransform(v) / yMaxT) * plotH;
+
+  geom = { w,h, margin, plotW, plotH, minYear, maxYear, xScale, xInv, yScale, yTicks };
+
+  const gGrid = createSvgEl("g");
+  const gAxes = createSvgEl("g");
+  const gLines = createSvgEl("g");
+  const gOverlay = createSvgEl("g");
+
+  const xTicks = computeXTicks(minYear, maxYear);
+
+  for (const yr of xTicks){
+    const x = xScale(yr);
+    gGrid.appendChild(createSvgEl("line", { x1:x, y1:margin.t, x2:x, y2:margin.t+plotH, stroke:"rgba(74,74,74,.38)", "stroke-width":1 }));
+    const t = createSvgEl("text", { x:x, y: margin.t+plotH+18, fill:"rgba(176,176,176,.95)", "text-anchor":"middle", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+    t.textContent = yr;
+    gAxes.appendChild(t);
+  }
+  for (const tv of yTicks){
+    const y = yScale(tv);
+    gGrid.appendChild(createSvgEl("line", { x1:margin.l, y1:y, x2:margin.l+plotW, y2:y, stroke:"rgba(74,74,74,.38)", "stroke-width":1 }));
+    const tx = createSvgEl("text", { x: margin.l-10, y: y+4, fill:"rgba(176,176,176,.95)", "text-anchor":"end", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+    tx.textContent = tv;
+    gAxes.appendChild(tx);
+  }
+
+  gAxes.appendChild(createSvgEl("line", { x1: margin.l, y1: margin.t+plotH, x2: margin.l+plotW, y2: margin.t+plotH, stroke:"rgba(176,176,176,.7)", "stroke-width":1.25 }));
+  gAxes.appendChild(createSvgEl("line", { x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH, stroke:"rgba(176,176,176,.7)", "stroke-width":1.25 }));
+
+  const xTitle = createSvgEl("text", { x: margin.l + plotW/2, y: margin.t+plotH+42, fill:"rgba(176,176,176,.95)", "text-anchor":"middle", "font-size":13, "font-family":"Arial, system-ui, sans-serif" });
+  xTitle.textContent = "Año";
+  gAxes.appendChild(xTitle);
+
+  const yTitle = createSvgEl("text", {
+    x: 18, y: margin.t + plotH/2, fill:"rgba(176,176,176,.95)",
+    "text-anchor":"middle", "font-size":13, "font-family":"Arial, system-ui, sans-serif",
+    transform: `rotate(-90 18 ${margin.t + plotH/2})`
+  });
+  yTitle.textContent = "Porcentaje del total (%)";
+  gAxes.appendChild(yTitle);
+
+  for (const lab of app.allLabels){
+    if (!app.showPre2004 && app.x999Labels.includes(lab)) continue;
+
+    const d = buildSmoothPathForLabel(lab, xScale, yScale);
+    if (!d) continue;
+
+    const path = createSvgEl("path", {
+      d, fill:"none",
+      stroke: app.colorMap.get(lab) || "rgba(176,176,176,.7)",
+      "stroke-width": 2.0,
+      "stroke-linejoin":"round",
+      "stroke-linecap":"round",
+      "vector-effect":"non-scaling-stroke",
+      opacity: 1.0,
+      "data-label": lab,
+      style: "pointer-events:none;"
+    });
+    app.pathEls.set(lab, path);
+    gLines.appendChild(path);
+  }
+
+  const crosshair = createSvgEl("line", {
+    x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
+    stroke: "rgba(254,247,2,.55)", "stroke-width": 1.5,
+    opacity: 0, "vector-effect":"non-scaling-stroke", id: "crosshairLine",
+  });
+  const dot = createSvgEl("circle", {
+    cx: margin.l, cy: margin.t, r: 4.5,
+    fill: "rgba(254,247,2,.95)", stroke: "rgba(0,0,0,.55)",
+    "stroke-width": 1, opacity: 0, id:"hoverDot"
+  });
+  const hit = createSvgEl("rect", {
+    x: margin.l, y: margin.t, width: plotW, height: plotH,
+    fill: "rgba(0,0,0,0)", id: "hitRect", style: "cursor:crosshair;"
+  });
+
+  gOverlay.appendChild(crosshair);
+  gOverlay.appendChild(dot);
+  gOverlay.appendChild(hit);
+
+  svg.appendChild(gGrid);
+  svg.appendChild(gAxes);
+  svg.appendChild(gLines);
+  svg.appendChild(gOverlay);
+
+  attachPointerHandlers();
+  applyFocusStyles(true);
+
+  if (lastPointer) handlePointer(lastPointer, true);
+}
+
+/* tooltip + pointer */
+function svgPointFromEvent(ev){
+  const rect = els.svg.getBoundingClientRect();
+  const vb = els.svg.viewBox.baseVal;
+  const sx = vb.width / rect.width;
+  const sy = vb.height / rect.height;
+  const x = (ev.clientX - rect.left) * sx;
+  const y = (ev.clientY - rect.top) * sy;
+  return { x, y };
+}
+function nearestVisibleLabelAtYearIdx(yearIdx, xPix, yPix){
+  let best = null;
+  let bestDist = Infinity;
+
+  const year = app.years[yearIdx];
+  const xYear = geom.xScale(year);
+
+  for (const lab of app.pathEls.keys()){
+    const arr = app.valuesByLabel.get(lab);
+    if (!arr) continue;
+    const v = arr[yearIdx];
+    if (!Number.isFinite(v)) continue;
+    const yy = geom.yScale(v);
+
+    const dx = Math.abs(xPix - xYear);
+    const dy = Math.abs(yPix - yy);
+    const d = Math.hypot(dx, dy);
+    if (d < bestDist){
+      bestDist = d;
+      best = { lab, v, yy, d };
+    }
+  }
+  return best;
+}
+function buildTooltipAll(yearIdx){
+  const year = app.years[yearIdx];
+  const focus = app.focusSet && app.focusSet.size ? new Set(app.focusSet) : null;
+
+  const rows = [];
+  const rowsNaN = [];
+
+  for (const lab of app.pathEls.keys()){
+    const arr = app.valuesByLabel.get(lab);
+    const v = arr ? arr[yearIdx] : NaN;
+    const row = { lab, v, color: app.colorMap.get(lab) || PALETTE.text };
+    if (Number.isFinite(v)) rows.push(row);
+    else rowsNaN.push(row);
+  }
+  rows.sort((a,b)=> b.v - a.v);
+
+  const out = [];
+
+  if (focus){
+    const f = rows.filter(r => focus.has(r.lab));
+    f.sort((a,b)=> b.v - a.v);
+    for (const r of f){
+      if (out.length >= 15) break;
+      out.push(r);
+    }
+  }
+  for (const r of rows){
+    if (out.length >= 15) break;
+    if (focus && focus.has(r.lab)) continue;
+    out.push(r);
+  }
+  if (out.length < 15){
+    rowsNaN.sort((a,b)=> a.lab.localeCompare(b.lab, "es"));
+    for (const r of rowsNaN){
+      if (out.length >= 15) break;
+      if (focus && focus.has(r.lab)) continue;
+      out.push(r);
+    }
+  }
+
+  let html = `<div class="ttYear">Año ${year}</div>`;
+  for (const r of out){
+    html += `
+      <div class="ttRow">
+        <span class="ttSw" style="background:${r.color}"></span>
+        <span class="ttName">${r.lab}</span>
+        <span class="ttVal">${formatPct(r.v)}</span>
+      </div>
+    `;
+  }
+  return html;
+}
+function buildTooltipSingle(yearIdx, lab, v){
+  const year = app.years[yearIdx];
+  const color = app.colorMap.get(lab) || PALETTE.text;
+  return `
+    <div class="ttYear">Año ${year}</div>
+    <div class="ttRow">
+      <span class="ttSw" style="background:${color}"></span>
+      <span class="ttName">${lab}</span>
+      <span class="ttVal">${formatPct(v)}</span>
+    </div>
+  `;
+}
+function placeTooltip(xPix, yPix){
+  const tip = els.tooltip;
+  const wrapRect = els.svgWrap.getBoundingClientRect();
+  const vb = els.svg.viewBox.baseVal;
+
+  const xCss = (xPix / vb.width) * wrapRect.width;
+  const yCss = (yPix / vb.height) * wrapRect.height;
+
+  const pad = 12;
+  const offset = 14;
+
+  tip.style.display = "block";
+
+  const tw = tip.offsetWidth || 260;
+  const th = tip.offsetHeight || 180;
+
+  let left = xCss + offset;
+  let top  = yCss + offset;
+
+  if (left + tw + pad > wrapRect.width) left = xCss - tw - offset;
+  if (left < pad) left = pad;
+
+  if (top + th + pad > wrapRect.height) top = yCss - th - offset;
+  if (top < pad) top = pad;
+
+  tip.style.left = left + "px";
+  tip.style.top  = top + "px";
+}
+function hideTooltipAndGuides(){
+  els.tooltip.style.display = "none";
+  const ch = els.svg.querySelector("#crosshairLine");
+  const dot = els.svg.querySelector("#hoverDot");
+  if (ch) ch.setAttribute("opacity", "0");
+  if (dot) dot.setAttribute("opacity", "0");
+
+  if (app.hoverLabel !== null){
+    app.hoverLabel = null;
+    applyFocusStyles();
+  }
+}
+function handlePointer(ev){
+  if (!geom) return;
+  lastPointer = ev;
+
+  const p = svgPointFromEvent(ev);
+  const { margin, plotW, plotH } = geom;
+
+  const inside = (p.x >= margin.l && p.x <= margin.l + plotW && p.y >= margin.t && p.y <= margin.t + plotH);
+  if (!inside){
+    hideTooltipAndGuides();
     return;
   }
 
-  function rebuild(){
-    const series = buildSeriesList();
-    const yMax = computeYMax(series.map(s=>s.key));
-    const controller = makeChartController({
-      svg, wrap, tooltipEl, errorEl,
-      legendEl,
-      controls,
-      seriesList: series,
-      getValueAtYear,
-      getSeriesForPath,
-      xDomain: app.xDomain,
-      yDomain: { left: { min:0, max:yMax } },
-      formatValue: (k,v)=>formatPct(v),
-      yTickBuilder,
-      yLabelLeft: "Porcentaje del total (%)",
-      yLabelRight: null,
-      defaultOrderTooltip: null,
-      topN: 15,
-      valueSorter: (a,b)=>tooltipSorter(a,b)
-    });
-    window.__pge = { onShow: () => controller.onShow() };
+  const yearApprox = geom.xInv(p.x);
+  const yearIdx = binarySearchNearest(app.years, yearApprox);
+  const year = app.years[yearIdx];
+  const xPix = geom.xScale(year);
+
+  const ch = els.svg.querySelector("#crosshairLine");
+  const dot = els.svg.querySelector("#hoverDot");
+
+  if (app.crosshairMode){
+    if (ch){
+      ch.setAttribute("x1", xPix);
+      ch.setAttribute("x2", xPix);
+      ch.setAttribute("opacity", "1");
+    }
+    els.tooltip.innerHTML = buildTooltipAll(yearIdx);
+    placeTooltip(p.x, p.y);
+
+    const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
+    const newHover = (pick && pick.d <= 16) ? pick.lab : null;
+
+    if (dot){
+      if (pick && pick.d <= 16){
+        dot.setAttribute("cx", xPix);
+        dot.setAttribute("cy", pick.yy);
+        dot.setAttribute("opacity", "1");
+      } else dot.setAttribute("opacity", "0");
+    }
+
+    if (newHover !== app.hoverLabel){
+      app.hoverLabel = newHover;
+      if (app.hoverFocus && !(app.focusSet && app.focusSet.size)) applyFocusStyles();
+    }
+    return;
   }
 
-  btnPre2004.addEventListener("click", () => {
-    app.showPre2004 = !app.showPre2004;
-    btnPre2004.classList.toggle("on", app.showPre2004);
-    rebuild();
-  });
+  const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
+  if (!pick || pick.d > 14){
+    hideTooltipAndGuides();
+    return;
+  }
 
-  rebuild();
+  if (dot){
+    dot.setAttribute("cx", xPix);
+    dot.setAttribute("cy", pick.yy);
+    dot.setAttribute("opacity", "1");
+  }
+  if (ch) ch.setAttribute("opacity", "0");
+
+  els.tooltip.innerHTML = buildTooltipSingle(yearIdx, pick.lab, pick.v);
+  placeTooltip(xPix, pick.yy);
+
+  if (pick.lab !== app.hoverLabel){
+    app.hoverLabel = pick.lab;
+    if (app.hoverFocus && !(app.focusSet && app.focusSet.size)) applyFocusStyles();
+  }
+}
+function attachPointerHandlers(){
+  const hit = els.svg.querySelector("#hitRect");
+  if (!hit) return;
+
+  hit.onmousemove = (ev)=>{
+    if (rafPending){
+      lastPointer = ev;
+      return;
+    }
+    rafPending = true;
+    lastPointer = ev;
+    requestAnimationFrame(()=>{
+      rafPending = false;
+      handlePointer(lastPointer);
+    });
+  };
+  hit.onmouseleave = ()=> hideTooltipAndGuides();
+  hit.onclick = (ev)=>{
+    if (!geom) return;
+    const p = svgPointFromEvent(ev);
+    const { margin, plotW, plotH } = geom;
+    const inside = (p.x >= margin.l && p.x <= margin.l + plotW && p.y >= margin.t && p.y <= margin.t + plotH);
+    if (!inside) return;
+
+    const yearApprox = geom.xInv(p.x);
+    const yearIdx = binarySearchNearest(app.years, yearApprox);
+    const year = app.years[yearIdx];
+    const xPix = geom.xScale(year);
+
+    const pick = nearestVisibleLabelAtYearIdx(yearIdx, xPix, p.y);
+    if (!pick || pick.d > 14) return;
+
+    toggleFocusLabel(pick.lab, !!ev.shiftKey);
+  };
+}
+
+/* UI events */
+els.btnPre2004.addEventListener("click", ()=>{
+  app.showPre2004 = !app.showPre2004;
+  setButtonState(els.btnPre2004, app.showPre2004);
+
+  if (!app.showPre2004 && app.focusSet){
+    for (const lab of Array.from(app.focusSet)){
+      if (app.x999Labels.includes(lab)) app.focusSet.delete(lab);
+    }
+    if (app.focusSet.size === 0) app.focusSet = null;
+  }
+
+  buildLegend();
+  draw();
+});
+els.btnScale.addEventListener("click", ()=>{
+  app.scaleMode = (app.scaleMode === "exp") ? "log" : "exp";
+  els.btnScale.textContent = (app.scaleMode === "exp") ? "Escala: Exponencial" : "Escala: Logarítmica";
+  setButtonState(els.btnScale, app.scaleMode === "log");
+  draw();
+});
+els.btnCrosshair.addEventListener("click", ()=>{
+  app.crosshairMode = !app.crosshairMode;
+  els.btnCrosshair.textContent = app.crosshairMode ? "Línea vertical: ON" : "Línea vertical: OFF";
+  setButtonState(els.btnCrosshair, app.crosshairMode);
+  hideTooltipAndGuides();
+});
+els.btnHoverFocus.addEventListener("click", ()=>{
+  app.hoverFocus = !app.hoverFocus;
+  els.btnHoverFocus.textContent = app.hoverFocus ? "Resaltar al pasar: ON" : "Resaltar al pasar: OFF";
+  setButtonState(els.btnHoverFocus, app.hoverFocus);
+  applyFocusStyles(true);
+});
+els.btnResetFocus.addEventListener("click", ()=>{
+  resetFocus();
+  hideTooltipAndGuides();
+});
+
+const ro = new ResizeObserver(()=>{ draw(); });
+ro.observe(els.svgWrap);
+
+function showError(msg){
+  els.errorBox.style.display = "flex";
+  els.errorBox.textContent = msg;
+}
+async function loadDataDefault(){
+  const polUrl = "pge_politicas.csv";
+  const meta1Url = "pge_politicas_metadata_1.csv";
+  const meta2Url = "pge_politicas_metadata_2.csv"; // se carga por compatibilidad
+
+  const [polTxt, m1Txt] = await Promise.all([
+    fetchText(polUrl),
+    fetchText(meta1Url),
+    fetchText(meta2Url).catch(()=>""), // no rompe si no existe, pero tú lo tienes
+  ]);
+
+  const dfPol = parseCSV(polTxt);
+  const dfM1 = parseCSV(m1Txt);
+
+  const prep = prepararSeriesPct(dfPol, dfM1);
+  if (!prep) throw new Error("Los CSV se cargaron pero no hay filas válidas.");
+  return prep;
+}
+
+/* init */
+(async function init(){
+  try{
+    const prep = await loadDataDefault();
+    app.prepared = prep;
+
+    app.labelsMain = prep.labels_main;
+    app.x999Labels = prep.x999_labels;
+
+    const set = new Set();
+    const ordered = [];
+    for (const lab of app.labelsMain){ if (!set.has(lab)) { set.add(lab); ordered.push(lab); } }
+    for (const lab of prep.series.keys()){ if (!set.has(lab)) { set.add(lab); ordered.push(lab); } }
+    app.allLabels = ordered;
+
+    app.colorMap = buildColorMap(prep);
+
+    const aligned = buildAlignedValues(prep);
+    app.years = aligned.years;
+    app.valuesByLabel = aligned.valuesByLabel;
+
+    setButtonState(els.btnPre2004, false);
+    setButtonState(els.btnScale, false);
+    setButtonState(els.btnCrosshair, false);
+    setButtonState(els.btnHoverFocus, false);
+
+    buildLegend();
+    draw();
+  } catch (e){
+    console.error(e);
+    showError("No puedo cargar los CSV necesarios (pge_politicas.csv, pge_politicas_metadata_1.csv, pge_politicas_metadata_1.csv).");
+  }
 })();
+
+// Hook para el sistema de pestañas del index principal
+try{
+  window.__pge = { onShow: () => requestAnimationFrame(() => { try{ draw(); } catch(_){} }) };
+} catch(_){ /* noop */ }
+})();
+
 
 /* ===================== Vista 2: Gasto vs beneficio (PIB & Gasto) ===================== */
 (async function(){
@@ -1650,7 +2611,7 @@ function makeChartController(opts){
   window.__gb = { onShow: () => controller.onShow() };
 })();
 
-/* ===================== Vista 3: Poder adquisitivo ===================== */
+/* ===================== Vista 3: Presión fiscal ===================== */
 (async function(){
   const svg = document.getElementById("chartSvgPA");
   const wrap = document.getElementById("svgWrapPA");
@@ -1706,7 +2667,13 @@ function makeChartController(opts){
       if (!Number.isFinite(year) || !Number.isFinite(v)) continue;
       rows.push({year, v});
     }
-    if (!rows.length) throw new Error("No hay datos válidos para poder adquisitivo.");
+    if (!rows.length) throw new Error("No hay datos válidos para presión fiscal.");
+
+    // Si la serie viene en formato razón (0–1), conviértela a %.
+    const maxRaw = rows.reduce((m,r)=>Math.max(m, r.v), 0);
+    if (Number.isFinite(maxRaw) && maxRaw > 0 && maxRaw <= 1.5){
+      for (const r of rows) r.v = r.v * 100;
+    }
 
     const minY = Math.max(1986, rows.reduce((m,r)=>Math.min(m,r.year), Infinity));
     const maxY = Math.min(2023, rows.reduce((m,r)=>Math.max(m,r.year), -Infinity));
