@@ -13,7 +13,6 @@
       --primary:#FEF702;
       --text:#B0B0B0;
       --grid:#4A4A4A;
-      --panel:#2b2b2b;
       --stroke:#3a3a3a;
 
       --fontTitle: "Futura","Trebuchet MS",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -80,7 +79,7 @@
     .view.active{ display:grid !important; }
 
     .panel{
-      background:linear-gradient(180deg, rgba(255,255,255,03), rgba(255,255,255,02));
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
       border:1px solid var(--stroke);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
@@ -92,7 +91,7 @@
     .ph{
       padding:12px 12px 10px 12px;
       border-bottom:1px solid var(--stroke);
-      background:rgba(255,255,255,02);
+      background:rgba(255,255,255,.02);
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -124,12 +123,13 @@
       padding:12px;
       overflow:auto;
       min-height:0;
+      flex: 1 1 auto;
     }
 
     /* Botones */
     .btn{
       appearance:none;
-      border:1px solid rgba(255,255,255,12);
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.04);
       color: rgba(255,255,255,.9);
       padding: 9px 12px;
@@ -141,7 +141,7 @@
       line-height:1;
       white-space:nowrap;
     }
-    .btn:hover{ border-color: rgba(254,247,2,35); background: rgba(255,255,255,.06); }
+    .btn:hover{ border-color: rgba(254,247,2,.35); background: rgba(255,255,255,.06); }
     .btn:active{ transform: translateY(1px); }
     .btn.on{
       background: rgba(254,247,2,.9);
@@ -165,15 +165,15 @@
       align-items:center;
       gap:10px;
       padding:10px 10px;
-      border:1px solid rgba(255,255,255,08);
+      border:1px solid rgba(255,255,255,.08);
       background: rgba(255,255,255,.02);
       border-radius:12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,10);
+      box-shadow: 0 6px 18px rgba(0,0,0,.10);
       cursor:pointer;
       user-select:none;
       min-width:0;
     }
-    .item:hover{ border-color: rgba(254,247,2,25); }
+    .item:hover{ border-color: rgba(254,247,2,.25); }
     .sw{ width:12px; height:12px; border-radius:3px; flex:0 0 auto; }
     .nm{
       flex:1 1 auto;
@@ -188,7 +188,7 @@
       font-size: calc(10px * var(--uiScale));
       padding:3px 8px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,10);
+      border:1px solid rgba(255,255,255,.10);
       opacity:.85;
       flex:0 0 auto;
     }
@@ -200,6 +200,7 @@
       flex-direction:column;
       gap:10px;
       overflow:hidden;
+      min-height:0;
     }
 
     .svgWrap{
@@ -225,12 +226,12 @@
       max-width: 420px;
       max-height: 420px;
       overflow:hidden;
-      border: 1px solid rgba(255,255,255,12);
-      background: rgba(0,0,0,82);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.82);
       backdrop-filter: blur(6px);
       border-radius: 12px;
       padding: 10px 10px;
-      box-shadow: 0 14px 40px rgba(0,0,0,35);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
       pointer-events:none;
       font-size: calc(12px * var(--uiScale));
       line-height: 1.25;
@@ -247,7 +248,7 @@
       align-items:center;
       gap:8px;
       padding: 3px 0;
-      border-bottom: 1px dashed rgba(255,255,255,08);
+      border-bottom: 1px dashed rgba(255,255,255,.08);
     }
     .ttRow:last-child{ border-bottom:none; }
     .ttSw{
@@ -258,12 +259,12 @@
       overflow:hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: rgba(255,255,255,90);
+      color: rgba(255,255,255,.90);
       min-width:0;
     }
     .ttVal{
       flex:0 0 auto;
-      color: rgba(255,255,255,95);
+      color: rgba(255,255,255,.95);
       font-variant-numeric: tabular-nums;
       white-space:nowrap;
     }
@@ -291,7 +292,7 @@
       justify-content:center;
       text-align:center;
       padding:18px;
-      color: rgba(255,255,255,.9);
+      color: rgba(255,255,255,.90);
       font-size: calc(13px * var(--uiScale));
       background: rgba(0,0,0,.35);
       z-index:2;
@@ -470,8 +471,6 @@
 })();
 
 /* ===================== Helpers comunes ===================== */
-const PALETTE = { bg:"#252525", primary:"#FEF702", text:"#B0B0B0", grid:"#4A4A4A" };
-
 function stripAccentsLower(s){
   if (s === null || s === undefined) return "";
   return String(s)
@@ -503,11 +502,9 @@ async function fetchText(url){
   return await r.text();
 }
 function parseCSV(text){
-  // CSV robusto (comillas, separadores , ; \t)
   const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l => l.trim().length);
   if (!lines.length) return { headers: [], rows: [] };
 
-  // Detect separator by counting on first few lines
   const seps = [",",";","\t","|"];
   function scoreSep(sep){
     let score = 0;
@@ -562,7 +559,6 @@ function pickCol(headers, candidates){
     const k = normHeader(c);
     if (map.has(k)) return map.get(k);
   }
-  // try partial match
   for (const [k, orig] of map.entries()){
     for (const c of candidates){
       if (k.includes(normHeader(c))) return orig;
@@ -586,12 +582,6 @@ function niceStepY(span){
   if (span <= 200) return 20;
   if (span <= 500) return 50;
   return 100;
-}
-function niceStepPct(ymax){
-  if (ymax <= 10) return 1;
-  if (ymax <= 20) return 2;
-  if (ymax <= 40) return 5;
-  return 10;
 }
 function computeXTicks(minYear, maxYear){
   const step = niceStepX(maxYear - minYear);
@@ -620,6 +610,8 @@ function makeHSVColor(i, n){
   b = Math.round((b+m)*255);
   return `rgb(${r},${g},${b})`;
 }
+
+/* Curva suave Catmull-Rom -> Bézier (con clamping de overshoot) */
 function buildSmoothPathFromPoints(pts){
   if (!pts || pts.length < 2) return "";
   function clampCtrlY(cy, y1, y2){
@@ -648,6 +640,7 @@ function buildSmoothPathFromPoints(pts){
   }
   return d;
 }
+
 function lowerBound(arr, x){
   let lo=0, hi=arr.length;
   while (lo<hi){
@@ -658,7 +651,6 @@ function lowerBound(arr, x){
   return lo;
 }
 function interpAtYear(series, year){
-  // series: {xs:number[], ys:number[]}
   const xs = series.xs;
   const ys = series.ys;
   if (!xs || xs.length === 0) return null;
@@ -678,26 +670,26 @@ function interpAtYear(series, year){
   return y0 + t * (y1 - y0);
 }
 
-/* ===================== Chart base (simple encapsulation) ===================== */
+/* ===================== Chart controller (SVG) ===================== */
 function makeChartController(opts){
   const {
     svg, wrap, tooltipEl, errorEl,
     legendEl,
-    controls, // {btnScale, btnCrosshair, btnHoverFocus, btnReset}
-    seriesList, // array of {key,label,color,unit,axis}
-    getValueAtYear, // (key, year)->value|null
-    getSeriesForPath, // (key)-> {xs,ys} in plotting domain (already pre-scaled by unit)
-    xDomain, // {min,max}
-    yDomain, // {left:{min,max,stepFn,label}, right?:{min,max,label,mapper}}
-    formatValue, // (key, value)->string
-    extraBackground, // (gBg, xScale, plotRect)->void
-    yTickBuilder, // optional (side, max)->ticks[] (in original units)
-    rightAxis, // optional object for right axis: {label, ticks:[], mapYToLeftY: fn(yRightT)->yLeftT, formatTick: fn(v)->string}
-    yLabelLeft, // string
-    yLabelRight, // string or null
-    defaultOrderTooltip, // array of keys for crosshair tooltip (optional)
-    topN, // number of rows for crosshair tooltip (optional)
-    valueSorter, // (a,b) custom sorter for tooltip rows
+    controls,
+    seriesList,
+    getValueAtYear,
+    getSeriesForPath,
+    xDomain,
+    yDomain,
+    formatValue,
+    extraBackground,
+    yTickBuilder,
+    rightAxis,
+    yLabelLeft,
+    yLabelRight,
+    defaultOrderTooltip,
+    topN,
+    valueSorter,
   } = opts;
 
   const state = {
@@ -705,7 +697,7 @@ function makeChartController(opts){
     hoverKey: null,
     hoverFocusMode: false,
     crosshairMode: false,
-    scaleMode: "exp", // exp | log
+    scaleMode: "exp",
     pathEls: new Map(),
     itemEls: new Map(),
     geom: null,
@@ -757,10 +749,6 @@ function makeChartController(opts){
     }
     applyFocusStyles(true);
   }
-  function resetFocus(){
-    state.focusSet = null;
-    applyFocusStyles(true);
-  }
 
   function yTransform(v){
     if (!Number.isFinite(v)) return NaN;
@@ -770,15 +758,6 @@ function makeChartController(opts){
 
   function computeYTicksLeft(ymax){
     if (yTickBuilder) return yTickBuilder("left", ymax);
-    // default: percent-friendly
-    if (state.scaleMode === "log"){
-      const candidates = [0,1,2,5,10,15,20,30,40,50,60,80,100,150,200,300,500,800,1000];
-      const t = candidates.filter(v => v <= ymax + 1e-9);
-      if (t.length < 4){
-        return [0, Math.max(1, Math.round(ymax/3)), Math.max(2, Math.round(2*ymax/3)), Math.ceil(ymax)];
-      }
-      return t;
-    }
     const step = niceStepY(ymax);
     const yTop = Math.ceil(ymax/step)*step;
     const out = [];
@@ -799,6 +778,8 @@ function makeChartController(opts){
 
   function buildLegend(){
     legendEl.innerHTML = "";
+    state.itemEls.clear();
+
     for (const s of seriesList){
       const el = document.createElement("div");
       el.className = "item";
@@ -823,8 +804,7 @@ function makeChartController(opts){
       }
 
       el.addEventListener("click", (ev) => {
-        const additive = ev.shiftKey;
-        toggleFocusKey(s.key, additive);
+        toggleFocusKey(s.key, ev.shiftKey);
       });
 
       legendEl.appendChild(el);
@@ -848,11 +828,10 @@ function makeChartController(opts){
     const plotRect = { x: margin.l, y: margin.t, w: plotW, h: plotH };
 
     const xScale = (year) => {
-      const t = (year - xDomain.min) / (xDomain.max - xDomain.min);
+      const t = (year - xDomain.min) / (xDomain.max - xDomain.min || 1);
       return margin.l + t * plotW;
     };
 
-    // y ranges in transformed space
     const yTicksLeft = computeYTicksLeft(yDomain.left.max);
     const yValsT = yTicksLeft.map(v => yTransform(v));
     const yMinT = Math.min(...yValsT.filter(Number.isFinite));
@@ -862,13 +841,11 @@ function makeChartController(opts){
       return margin.t + plotH - t * plotH;
     };
 
-    // Right axis mapping in transformed space (optional)
+    // Right axis mapping (optional)
     let mapRightToLeftT = null;
     let rightTicks = null;
-    let rightLabel = null;
     if (rightAxis){
       rightTicks = rightAxis.ticks;
-      rightLabel = rightAxis.label;
       const rTicksT = rightTicks.map(v => yTransform(v)).filter(Number.isFinite);
       const rMinT = Math.min(...rTicksT);
       const rMaxT = Math.max(...rTicksT);
@@ -886,33 +863,34 @@ function makeChartController(opts){
 
     if (extraBackground) extraBackground(gBg, xScale, plotRect);
 
+    // Grid + x ticks
     const xTicks = computeXTicks(xDomain.min, xDomain.max);
     for (const yr of xTicks){
       const x = xScale(yr);
-      gGrid.appendChild(createSvgEl("line", { x1:x, y1:margin.t, x2:x, y2:margin.t+plotH, stroke:"rgba(74,74,74,38)", "stroke-width":1 }));
-      const t = createSvgEl("text", { x:x, y: margin.t+plotH+18, fill:"rgba(176,176,176,95)", "text-anchor":"middle", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+      gGrid.appendChild(createSvgEl("line", { x1:x, y1:margin.t, x2:x, y2:margin.t+plotH, stroke:"rgba(74,74,74,.38)", "stroke-width":1 }));
+      const t = createSvgEl("text", { x:x, y: margin.t+plotH+18, fill:"rgba(176,176,176,.95)", "text-anchor":"middle", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
       t.textContent = yr;
       gAxes.appendChild(t);
     }
+    // y ticks left
     for (const tv of yTicksLeft){
       const y = yScaleLeftT(yTransform(tv));
-      gGrid.appendChild(createSvgEl("line", { x1:margin.l, y1:y, x2:margin.l+plotW, y2:y, stroke:"rgba(74,74,74,38)", "stroke-width":1 }));
-      const tx = createSvgEl("text", { x: margin.l-10, y: y+4, fill:"rgba(176,176,176,95)", "text-anchor":"end", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+      gGrid.appendChild(createSvgEl("line", { x1:margin.l, y1:y, x2:margin.l+plotW, y2:y, stroke:"rgba(74,74,74,.38)", "stroke-width":1 }));
+      const tx = createSvgEl("text", { x: margin.l-10, y: y+4, fill:"rgba(176,176,176,.95)", "text-anchor":"end", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
       tx.textContent = String(tv);
       gAxes.appendChild(tx);
     }
 
-    // Right ticks
+    // Right axis
     if (rightAxis){
       const rightX = margin.l + plotW;
-      // axis line
       gAxes.appendChild(createSvgEl("line", { x1:rightX, y1:margin.t, x2:rightX, y2:margin.t+plotH, stroke:"rgba(176,176,176,.7)", "stroke-width":1.25 }));
       for (const tv of rightTicks){
         const yR = yTransform(tv);
         const yL = mapRightToLeftT(yR);
         const y = yScaleLeftT(yL);
         gGrid.appendChild(createSvgEl("line", { x1:rightX, y1:y, x2:rightX-8, y2:y, stroke:"rgba(176,176,176,.7)", "stroke-width":1 }));
-        const tx = createSvgEl("text", { x: rightX+10, y: y+4, fill:"rgba(176,176,176,95)", "text-anchor":"start", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
+        const tx = createSvgEl("text", { x: rightX+10, y: y+4, fill:"rgba(176,176,176,.95)", "text-anchor":"start", "font-size":12, "font-family":"Arial, system-ui, sans-serif" });
         tx.textContent = rightAxis.formatTick ? rightAxis.formatTick(tv) : String(tv);
         gAxes.appendChild(tx);
       }
@@ -946,7 +924,7 @@ function makeChartController(opts){
       gAxes.appendChild(yTitleR);
     }
 
-    // build series paths
+    // Lines
     state.pathEls.clear();
     for (const s of seriesList){
       const ser = getSeriesForPath(s.key);
@@ -992,7 +970,7 @@ function makeChartController(opts){
       gLines.appendChild(path);
     }
 
-    // Overlay: crosshair + dot + hit
+    // Overlay
     const crosshair = createSvgEl("line", {
       x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
       stroke: "rgba(254,247,2,.55)", "stroke-width": 1.5,
@@ -1018,9 +996,8 @@ function makeChartController(opts){
     svg.appendChild(gLines);
     svg.appendChild(gOverlay);
 
-    state.geom = { w,h, margin, plotW, plotH, xScale, yScaleLeftT, yTransform, yMinT, yMaxT, mapRightToLeftT, crosshair, dot, hit };
+    state.geom = { w,h, margin, plotW, plotH, xScale, yScaleLeftT, yTransform, mapRightToLeftT, crosshair, dot, hit };
 
-    // pointer events (RAF)
     function localXY(ev){
       const b = svg.getBoundingClientRect();
       const x = (ev.clientX - b.left) * (w / b.width);
@@ -1036,7 +1013,6 @@ function makeChartController(opts){
     function renderHover(pt){
       const year = nearestYearFromX(pt.x);
 
-      // decide hover key
       let hoverKey = null;
       let bestDist = Infinity;
       let bestY = null;
@@ -1066,23 +1042,21 @@ function makeChartController(opts){
 
       state.hoverKey = hoverKey;
 
-      // crosshair on/off
       if (state.crosshairMode){
         const x = xScale(year);
-        state.geom.crosshair.setAttribute("x1", x);
-        state.geom.crosshair.setAttribute("x2", x);
-        state.geom.crosshair.setAttribute("opacity", "1");
+        crosshair.setAttribute("x1", x);
+        crosshair.setAttribute("x2", x);
+        crosshair.setAttribute("opacity", "1");
+        dot.setAttribute("opacity", "0");
 
-        // Build tooltip
+        // tooltip table
         const rows = [];
-        const keys = defaultOrderTooltip && defaultOrderTooltip.length ? defaultOrderTooltip : seriesList.map(s => s.key);
-
+        const keys = (defaultOrderTooltip && defaultOrderTooltip.length) ? defaultOrderTooltip : seriesList.map(s=>s.key);
         for (const k of keys){
           const v = getValueAtYear(k, year);
-          rows.push({ key: k, v });
+          rows.push({ key:k, v });
         }
 
-        // If user wants topN sorting (PGE), apply sorter; else keep order.
         let finalRows = rows;
         if (valueSorter){
           finalRows = rows.slice().sort(valueSorter);
@@ -1117,13 +1091,10 @@ function makeChartController(opts){
         }
 
         tooltipEl.style.display = "block";
-        // place tooltip
+
         const pad = 10;
         let left = x + 12;
         let top = margin.t + 12;
-        // clamp to wrap
-        const wrapRect = wrap.getBoundingClientRect();
-        // Rough sizes
         const tw = clamp(tooltipEl.offsetWidth || 260, 240, 420);
         const th = clamp(tooltipEl.offsetHeight || 180, 80, 420);
         if (left + tw + pad > w) left = x - tw - 12;
@@ -1131,24 +1102,21 @@ function makeChartController(opts){
         tooltipEl.style.left = left + "px";
         tooltipEl.style.top = top + "px";
 
-        // dot hidden in crosshair mode
-        state.geom.dot.setAttribute("opacity", "0");
       } else {
-        state.geom.crosshair.setAttribute("opacity", "0");
+        crosshair.setAttribute("opacity", "0");
 
         if (!hoverKey){
           tooltipEl.style.display = "none";
-          state.geom.dot.setAttribute("opacity", "0");
+          dot.setAttribute("opacity", "0");
           applyFocusStyles(false);
           return;
         }
 
         const x = xScale(year);
-        state.geom.dot.setAttribute("cx", x);
-        state.geom.dot.setAttribute("cy", bestY);
-        state.geom.dot.setAttribute("opacity", "1");
+        dot.setAttribute("cx", x);
+        dot.setAttribute("cy", bestY);
+        dot.setAttribute("opacity", "1");
 
-        // tooltip single
         const s = seriesList.find(x => x.key === hoverKey);
         const v = getValueAtYear(hoverKey, year);
         tooltipEl.innerHTML = "";
@@ -1187,7 +1155,6 @@ function makeChartController(opts){
         applyFocusStyles(false);
       }
 
-      // hover focus mode
       if (state.hoverFocusMode && !state.focusSet){
         applyFocusStyles(true);
       }
@@ -1206,14 +1173,19 @@ function makeChartController(opts){
     function onLeave(){
       state.lastPointer = null;
       state.hoverKey = null;
-      state.geom.crosshair.setAttribute("opacity", "0");
-      state.geom.dot.setAttribute("opacity", "0");
+      crosshair.setAttribute("opacity", "0");
+      dot.setAttribute("opacity", "0");
       tooltipEl.style.display = "none";
       applyFocusStyles(true);
     }
 
     hit.addEventListener("mousemove", onMove);
     hit.addEventListener("mouseleave", onLeave);
+    hit.addEventListener("click", (ev) => {
+      if (state.hoverKey){
+        toggleFocusKey(state.hoverKey, ev.shiftKey);
+      }
+    });
 
     applyFocusStyles(true);
   }
@@ -1239,29 +1211,24 @@ function makeChartController(opts){
       applyFocusStyles(true);
     });
     controls.btnReset.addEventListener("click", () => {
-      resetFocus();
+      state.focusSet = null;
       state.hoverKey = null;
       tooltipEl.style.display = "none";
       applyFocusStyles(true);
     });
   }
 
-  function onResize(){ draw(); }
-
   buildLegend();
   setControls();
   draw();
 
   window.addEventListener("resize", () => {
-    // Evitar redibujos excesivos por resize continuo
     clearTimeout(state.__t);
-    state.__t = setTimeout(onResize, 120);
+    state.__t = setTimeout(() => draw(), 120);
   });
 
   return {
-    draw,
-    onShow: () => { draw(); },
-    setFocus: (kSet) => { state.focusSet = kSet; applyFocusStyles(true); }
+    onShow: () => draw(),
   };
 }
 
@@ -1283,24 +1250,20 @@ function makeChartController(opts){
 
   const app = {
     showPre2004: false,
-    prepared: null,
-    seriesByKey: new Map(),   // key -> {xs, ys} (pct)
+    seriesByKey: new Map(),   // key -> {xs,ys} pct
     yearValueByKey: new Map(),// key -> Map(year->pct)
+    keyInfo: new Map(),       // key -> {label,color,pre2004,peak}
     allKeys: [],
     xDomain: {min: 1986, max: 2023},
-    keyInfo: new Map(),       // key -> {label,color,badge,pre2004}
   };
 
-  function formatPct(v){
-    if (!Number.isFinite(v)) return "—";
-    return v.toFixed(2) + "%";
-  }
+  function formatPct(v){ return Number.isFinite(v) ? (v.toFixed(2) + "%") : "—"; }
 
   function buildSeriesList(){
-    const out = [];
     const keys = app.allKeys.slice();
-    // ordenar: visibles primero y por pico desc
     keys.sort((a,b)=> (app.keyInfo.get(b)?.peak||0) - (app.keyInfo.get(a)?.peak||0));
+
+    const out = [];
     for (const k of keys){
       const info = app.keyInfo.get(k);
       if (!app.showPre2004 && info?.pre2004) continue;
@@ -1328,7 +1291,6 @@ function makeChartController(opts){
   }
 
   function yTickBuilder(side, ymax){
-    // PGE usa ticks en % (0-100)
     if (side !== "left") return [];
     if (ymax <= 10) return [0,1,2,3,4,5,6,8,10];
     if (ymax <= 20) return [0,2,4,6,8,10,12,15,20];
@@ -1355,13 +1317,10 @@ function makeChartController(opts){
     return vb - va;
   }
 
-  function topNForPGE(){ return 15; }
-
   async function loadPGE(){
-    // CSVs
     const [polTxt, m1Txt] = await Promise.all([
       fetchText("pge_politicas.csv"),
-      fetchText("pge_politicas_metadata_1.csv").catch(() => ""), // opcional
+      fetchText("pge_politicas_metadata_1.csv").catch(() => ""),
     ]);
 
     const pol = parseCSV(polTxt);
@@ -1375,7 +1334,7 @@ function makeChartController(opts){
       throw new Error("pge_politicas.csv: faltan columnas requeridas (id, año, política, presupuesto).");
     }
 
-    // meta1 map id -> name (si está)
+    // meta name
     let idToName = new Map();
     if (m1Txt && m1Txt.trim()){
       const m1 = parseCSV(m1Txt);
@@ -1407,38 +1366,33 @@ function makeChartController(opts){
     const maxYear = rows.reduce((m,r)=>Math.max(m,r.year), -Infinity);
     app.xDomain = { min: minYear, max: maxYear };
 
-    // Totales por año
     const totalByYear = new Map();
     for (const r of rows){
       totalByYear.set(r.year, (totalByYear.get(r.year)||0) + r.val);
     }
 
-    // Map series
-    const byKey = new Map(); // key label -> Map(year->pct)
-    const byKeyRaw = new Map(); // key -> {idSet, minYear}
+    const byKey = new Map();       // name -> Map(year->pct)
+    const minYearByKey = new Map();// name -> minYear
     for (const r of rows){
       const tot = totalByYear.get(r.year) || 0;
       if (!(tot > 0)) continue;
       const pct = (r.val / tot) * 100;
       const key = r.name;
+
       if (!byKey.has(key)) byKey.set(key, new Map());
       byKey.get(key).set(r.year, pct);
 
-      if (!byKeyRaw.has(key)) byKeyRaw.set(key, { ids:new Set(), minYear: r.year });
-      byKeyRaw.get(key).ids.add(r.id);
-      byKeyRaw.get(key).minYear = Math.min(byKeyRaw.get(key).minYear, r.year);
+      minYearByKey.set(key, Math.min(minYearByKey.get(key) ?? Infinity, r.year));
     }
 
     const keys = Array.from(byKey.keys());
-
-    // Colores
     keys.sort((a,b)=> stripAccentsLower(a).localeCompare(stripAccentsLower(b)));
+
     const colorMap = new Map();
     for (let i=0;i<keys.length;i++){
       colorMap.set(keys[i], makeHSVColor(i, keys.length));
     }
 
-    // Convert to series arrays
     app.seriesByKey.clear();
     app.yearValueByKey.clear();
     app.keyInfo.clear();
@@ -1450,13 +1404,12 @@ function makeChartController(opts){
       app.seriesByKey.set(k, { xs, ys });
       app.yearValueByKey.set(k, mp);
 
-      const minY = byKeyRaw.get(k)?.minYear ?? minYear;
+      const minY = minYearByKey.get(k) ?? minYear;
       const pre2004 = minY < 2004;
       const peak = ys.reduce((m,v)=>Number.isFinite(v)?Math.max(m,v):m, 0);
 
-      app.keyInfo.set(k, { label: k, color: colorMap.get(k), pre2004, peak });
+      app.keyInfo.set(k, { label:k, color:colorMap.get(k), pre2004, peak });
     }
-
     app.allKeys = keys;
   }
 
@@ -1465,39 +1418,31 @@ function makeChartController(opts){
   } catch(e){
     errorEl.style.display = "flex";
     errorEl.textContent = e.message || String(e);
+    window.__pge = { onShow: ()=>{} };
     return;
   }
 
-  function buildController(){
-    const allSeries = buildSeriesList();
-    const yMax = computeYMax(allSeries.map(s=>s.key));
-    const yDomain = { left: { min:0, max:yMax } };
-
+  function rebuild(){
+    const series = buildSeriesList();
+    const yMax = computeYMax(series.map(s=>s.key));
     const controller = makeChartController({
       svg, wrap, tooltipEl, errorEl,
       legendEl,
       controls,
-      seriesList: allSeries,
+      seriesList: series,
       getValueAtYear,
       getSeriesForPath,
       xDomain: app.xDomain,
-      yDomain,
+      yDomain: { left: { min:0, max:yMax } },
       formatValue: (k,v)=>formatPct(v),
+      yTickBuilder,
       yLabelLeft: "Porcentaje del total (%)",
       yLabelRight: null,
-      yTickBuilder,
       defaultOrderTooltip: null,
-      topN: topNForPGE(),
-      valueSorter: tooltipSorter
+      topN: 15,
+      valueSorter: (a,b)=>tooltipSorter(a,b)
     });
-
-    return controller;
-  }
-
-  let controller = buildController();
-
-  function rebuild(){
-    controller = buildController();
+    window.__pge = { onShow: () => controller.onShow() };
   }
 
   btnPre2004.addEventListener("click", () => {
@@ -1506,9 +1451,7 @@ function makeChartController(opts){
     rebuild();
   });
 
-  window.__pge = {
-    onShow: () => controller?.onShow?.()
-  };
+  rebuild();
 })();
 
 /* ===================== Vista 2: Gasto vs beneficio (PIB & Gasto) ===================== */
@@ -1526,17 +1469,11 @@ function makeChartController(opts){
     btnReset: document.getElementById("btnResetFocusGB"),
   };
 
-  const app = {
-    xDomain: { min: 1986, max: 2023 },
-    series: new Map(),      // key -> {xs, ys}
-    yearVal: new Map(),     // key -> Map(year->v)
-  };
-
   const SERIES = [
-    { key:"pib_total", label:"PIB total", color:"#00E5FF", axis:"left", unit:"B€" },
-    { key:"gasto_total", label:"Gasto público total", color:"#FF6A00", axis:"left", unit:"B€" },
-    { key:"pib_pc", label:"PIB per cápita", color:"#79FF6B", axis:"right", unit:"k€" },
-    { key:"gasto_pc", label:"Gasto público per cápita", color:"#FF3D8D", axis:"right", unit:"k€" },
+    { key:"pib_total",  label:"PIB total",              color:"#00E5FF", axis:"left",  unit:"B€" },
+    { key:"gasto_total",label:"Gasto público total",    color:"#FF6A00", axis:"left",  unit:"B€" },
+    { key:"pib_pc",     label:"PIB per cápita",         color:"#79FF6B", axis:"right", unit:"k€" },
+    { key:"gasto_pc",   label:"Gasto público per cápita",color:"#FF3D8D",axis:"right", unit:"k€" },
   ];
 
   const PRES = [
@@ -1547,6 +1484,12 @@ function makeChartController(opts){
     { name:"Pedro Sánchez", start:2018, end:null, color:"#552222" },
   ];
 
+  const app = {
+    xDomain: { min: 1986, max: 2023 },
+    series: new Map(),      // key -> {xs,ys}
+    yearVal: new Map(),     // key -> Map(year->v)
+  };
+
   function formatVal(key, v){
     if (!Number.isFinite(v)) return "—";
     const s = SERIES.find(x => x.key === key);
@@ -1554,26 +1497,6 @@ function makeChartController(opts){
     if (s.unit === "B€") return v.toFixed(1) + " B€";
     if (s.unit === "k€") return v.toFixed(1) + " k€";
     return v.toFixed(1);
-  }
-
-  function padRange(vmin, vmax, frac=0.06){
-    const span = Math.max(1e-9, vmax - vmin);
-    return [vmin - span*frac, vmax + span*frac];
-  }
-
-  function tickBuilderAbs(side, ymax){
-    if (side !== "left") return [];
-    if (controls.btnScale.textContent.includes("Logar") || false){
-      // unused: we override below if needed
-    }
-    // We'll generate ticks in a "nice" way based on current max and mode in controller.
-    // controller will call this after changing scale, but it passes ymax in original units.
-    const span = ymax;
-    const step = niceStepY(span);
-    const top = Math.ceil(span/step)*step;
-    const out = [];
-    for (let v=0; v<=top+1e-9; v+=step) out.push(v);
-    return out;
   }
 
   function getSeriesForPath(key){ return app.series.get(key) || null; }
@@ -1585,7 +1508,6 @@ function makeChartController(opts){
   }
 
   function extraBackground(gBg, xScale, plotRect){
-    // franjas presidencias
     for (const p of PRES){
       const x0 = Math.max(app.xDomain.min, p.start);
       const x1 = Math.min(app.xDomain.max, p.end ?? app.xDomain.max);
@@ -1630,22 +1552,20 @@ function makeChartController(opts){
     const maxY = rows.reduce((m,r)=>Math.max(m,r.year), -Infinity);
     app.xDomain = { min: Math.max(1986, minY), max: Math.min(2023, maxY) };
 
-    // maps year->value (scaled)
-    const mp = new Map(SERIES.map(s => [s.key, new Map()]));
+    const baseMaps = new Map(SERIES.map(s => [s.key, new Map()]));
     for (const r of rows){
       if (r.year < app.xDomain.min || r.year > app.xDomain.max) continue;
-      mp.get("pib_total").set(r.year, Number.isFinite(r.pib) ? r.pib/1e9 : NaN);
-      mp.get("gasto_total").set(r.year, Number.isFinite(r.gto) ? r.gto/1e9 : NaN);
-      mp.get("pib_pc").set(r.year, Number.isFinite(r.pibpc) ? r.pibpc/1000 : NaN);
-      mp.get("gasto_pc").set(r.year, Number.isFinite(r.gtopc) ? r.gtopc/1000 : NaN);
+      baseMaps.get("pib_total").set(r.year, Number.isFinite(r.pib) ? r.pib/1e9 : NaN);
+      baseMaps.get("gasto_total").set(r.year, Number.isFinite(r.gto) ? r.gto/1e9 : NaN);
+      baseMaps.get("pib_pc").set(r.year, Number.isFinite(r.pibpc) ? r.pibpc/1000 : NaN);
+      baseMaps.get("gasto_pc").set(r.year, Number.isFinite(r.gtopc) ? r.gtopc/1000 : NaN);
     }
 
-    // Forward-fill missing years (como el script)
     const years = [];
     for (let y=app.xDomain.min; y<=app.xDomain.max; y++) years.push(y);
 
     for (const s of SERIES){
-      const ymap = mp.get(s.key);
+      const ymap = baseMaps.get(s.key);
       const out = new Map();
       let last = null;
       for (const y of years){
@@ -1659,8 +1579,6 @@ function makeChartController(opts){
       }
       app.yearVal.set(s.key, out);
 
-      // For path: keep only years that exist in original (not NaN) OR forward-filled?
-      // En el vídeo se usa forward-fill para continuidad, así que aquí incluimos todos los años con valor válido (post fill).
       const xs = [];
       const ys = [];
       for (const y of years){
@@ -1683,84 +1601,56 @@ function makeChartController(opts){
     return;
   }
 
-  // y domains (original units, used for tick generation); controller will transform for log/exp
-  function computeYDomain(){
-    const leftKeys = SERIES.filter(s => s.axis==="left").map(s=>s.key);
-    const rightKeys= SERIES.filter(s => s.axis==="right").map(s=>s.key);
+  // y ranges
+  const leftKeys = SERIES.filter(s=>s.axis==="left").map(s=>s.key);
+  const rightKeys= SERIES.filter(s=>s.axis==="right").map(s=>s.key);
 
-    const leftVals = [];
-    const rightVals= [];
-    for (const k of leftKeys){
-      const ser = app.series.get(k);
-      if (ser) leftVals.push(...ser.ys.filter(Number.isFinite));
-    }
-    for (const k of rightKeys){
-      const ser = app.series.get(k);
-      if (ser) rightVals.push(...ser.ys.filter(Number.isFinite));
-    }
-
-    let yLmin = Math.min(...leftVals);
-    let yLmax = Math.max(...leftVals);
-    let yRmin = Math.min(...rightVals);
-    let yRmax = Math.max(...rightVals);
-
-    if (!Number.isFinite(yLmin) || !Number.isFinite(yLmax)){ yLmin=0; yLmax=1; }
-    if (!Number.isFinite(yRmin) || !Number.isFinite(yRmax)){ yRmin=0; yRmax=1; }
-
-    [yLmin, yLmax] = padRange(yLmin, yLmax, 0.06);
-    [yRmin, yRmax] = padRange(yRmin, yRmax, 0.06);
-
-    return { yLmin, yLmax, yRmin, yRmax };
+  let yLmax = 1, yRmax = 1;
+  for (const k of leftKeys){
+    const ser = app.series.get(k);
+    if (!ser) continue;
+    for (const v of ser.ys) if (Number.isFinite(v)) yLmax = Math.max(yLmax, v);
   }
+  for (const k of rightKeys){
+    const ser = app.series.get(k);
+    if (!ser) continue;
+    for (const v of ser.ys) if (Number.isFinite(v)) yRmax = Math.max(yRmax, v);
+  }
+  yLmax *= 1.06;
+  yRmax *= 1.06;
 
-  const dom = computeYDomain();
-
-  // tick candidates
-  function buildTicksLinear(minV, maxV){
-    const span = maxV - minV;
-    const step = niceStepY(span);
-    const start = Math.floor(minV/step)*step;
-    const end = Math.ceil(maxV/step)*step;
+  function buildTicks(maxV){
+    const step = niceStepY(maxV);
+    const top = Math.ceil(maxV/step)*step;
     const out = [];
-    for (let v=start; v<=end+1e-9; v+=step){
-      if (v >= 0) out.push(Number(v.toFixed(10)));
-    }
+    for (let v=0; v<=top+1e-9; v+=step) out.push(Number(v.toFixed(10)));
     return out;
   }
 
-  const leftTicks = buildTicksLinear(0, dom.yLmax);
-  const rightTicks = buildTicksLinear(0, dom.yRmax);
+  const rightTicks = buildTicks(yRmax);
 
-  const seriesList = SERIES.map(s => ({ key:s.key, label:s.label, color:s.color, axis:s.axis }));
-
-  let controller = makeChartController({
+  const controller = makeChartController({
     svg, wrap, tooltipEl, errorEl,
     legendEl,
     controls,
-    seriesList,
+    seriesList: SERIES.map(s => ({ key:s.key, label:s.label, color:s.color, axis:s.axis })),
     getValueAtYear,
     getSeriesForPath,
     xDomain: app.xDomain,
-    yDomain: { left: { min: 0, max: dom.yLmax } },
+    yDomain: { left: { min: 0, max: yLmax } },
     formatValue: (k,v)=>formatVal(k,v),
+    extraBackground,
+    rightAxis: { ticks: rightTicks, formatTick: (v)=>String(v) },
     yLabelLeft: "Miles de millones de € (1986)",
     yLabelRight: "Miles de € por persona (1986)",
-    extraBackground,
-    rightAxis: {
-      label: "Miles de € por persona (1986)",
-      ticks: rightTicks,
-      formatTick: (v) => String(v)
-    },
     defaultOrderTooltip: ["pib_total","gasto_total","pib_pc","gasto_pc"],
     topN: 0
   });
 
-  window.__gb = {
-    onShow: () => controller?.onShow?.()
-  };
+  window.__gb = { onShow: () => controller.onShow() };
 })();
 
-/* ===================== Vista 3: Poder adquisitivo (Pct) ===================== */
+/* ===================== Vista 3: Poder adquisitivo ===================== */
 (async function(){
   const svg = document.getElementById("chartSvgPA");
   const wrap = document.getElementById("svgWrapPA");
@@ -1781,9 +1671,9 @@ function makeChartController(opts){
     yearVal: new Map(),
   };
 
-  const SERIES = [
-    { key:"pct", label:"Gasto público per cápita / PIB per cápita (1986)", color:"#FF3D8D", axis:"left", unit:"%" }
-  ];
+  const KEY = "pct";
+  const COLOR = "#FF3D8D";
+  const LABEL = "Gasto público per cápita / PIB per cápita (1986)";
 
   function formatPct(v){
     if (!Number.isFinite(v)) return "—";
@@ -1827,11 +1717,11 @@ function makeChartController(opts){
       mp.set(r.year, r.v);
     }
 
-    app.yearVal.set("pct", mp);
+    app.yearVal.set(KEY, mp);
 
     const xs = Array.from(mp.keys()).sort((a,b)=>a-b);
     const ys = xs.map(x => mp.get(x));
-    app.series.set("pct", { xs, ys });
+    app.series.set(KEY, { xs, ys });
   }
 
   try{
@@ -1843,26 +1733,23 @@ function makeChartController(opts){
     return;
   }
 
-  // y max (start at 0)
-  const ser = app.series.get("pct");
-  const ymax = Math.max(1, ...ser.ys.filter(Number.isFinite)) * 1.05;
-
-  const seriesList = SERIES.map(s => ({ key:s.key, label:s.label, color:s.color, axis:"left" }));
-  // legend (one item)
+  // legend
   legendEl.innerHTML = "";
   const it = document.createElement("div");
   it.className = "item";
-  it.dataset.key = "pct";
-  const sw = document.createElement("div"); sw.className="sw"; sw.style.background=SERIES[0].color;
-  const nm = document.createElement("div"); nm.className="nm"; nm.textContent = SERIES[0].label;
+  const sw = document.createElement("div"); sw.className="sw"; sw.style.background=COLOR;
+  const nm = document.createElement("div"); nm.className="nm"; nm.textContent = LABEL;
   it.appendChild(sw); it.appendChild(nm);
   legendEl.appendChild(it);
 
-  let controller = makeChartController({
+  const ser = app.series.get(KEY);
+  const ymax = Math.max(1, ...ser.ys.filter(Number.isFinite)) * 1.05;
+
+  const controller = makeChartController({
     svg, wrap, tooltipEl, errorEl,
     legendEl,
     controls,
-    seriesList,
+    seriesList: [{ key:KEY, label:LABEL, color:COLOR, axis:"left" }],
     getValueAtYear,
     getSeriesForPath,
     xDomain: app.xDomain,
@@ -1870,13 +1757,11 @@ function makeChartController(opts){
     formatValue: (k,v)=>formatPct(v),
     yLabelLeft: "Porcentaje del PIB per cápita (%)",
     yLabelRight: null,
-    defaultOrderTooltip: ["pct"],
+    defaultOrderTooltip: [KEY],
     topN: 0
   });
 
-  window.__pa = {
-    onShow: () => controller?.onShow?.()
-  };
+  window.__pa = { onShow: () => controller.onShow() };
 })();
 </script>
 </body>
