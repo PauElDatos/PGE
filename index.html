@@ -421,6 +421,11 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Asegurar que los mandatos se lean en una sola columna (evita el “bloque a la derecha”) */
+    .presStats .psMandateLine{ align-items:flex-start; }
+    .presStats .psMandateLine .k,
+    .presStats .psMandateLine .v{ width:100%; text-align:left; }
+
 
 
     /* ===== Ajustes de layout para evitar “apelmazado” en Vistas 2 y 3 ===== */
@@ -442,7 +447,13 @@
       margin-left: auto;
     }
 
-    .explainBox{
+        /* Scroll en el panel izquierdo (GB/PA) como en PGE */
+    #viewGB > section.panel:first-child .pc,
+    #viewPA > section.panel:first-child .pc{
+      overflow-y:auto;
+      padding-right: 4px;
+    }
+.explainBox{
       margin-top: 12px;
       padding: 12px 14px;
       border: 1px solid var(--stroke);
@@ -628,22 +639,8 @@
                   <button class="btn" id="btnExplainGB" title="Mostrar/ocultar explicación">Explicación</button>
 </div>
 
-        <div class="footerSingle">
-          Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
-        </div>
-
         
-        <div class="popBox" id="gbPopBox" style="display:none;">
-          <div class="popTitle">Población total (INE)</div>
-          <div class="popTableScroll">
-            <table class="popTable" aria-label="Tabla de población total por año">
-              <thead>
-                <tr><th>Año</th><th>Población total</th></tr>
-              </thead>
-              <tbody id="gbPopBody"></tbody>
-            </table>
-          </div>
-        </div>
+
         <div class="explainBox explainCollapsible" id="gbExplain">
           <div class="explainTitle">Cómo leer estas series</div>
           <div class="explainText">
@@ -662,6 +659,23 @@
             </div>
           </div>
         </div>
+<div class="footerSingle">
+          Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
+        </div>
+
+        
+        <div class="popBox" id="gbPopBox" style="display:none;">
+          <div class="popTitle">Población total (INE)</div>
+          <div class="popTableScroll">
+            <table class="popTable" aria-label="Tabla de población total por año">
+              <thead>
+                <tr><th>Año</th><th>Población total</th></tr>
+              </thead>
+              <tbody id="gbPopBody"></tbody>
+            </table>
+          </div>
+        </div>
+        
 
       </div>
     </section>
@@ -697,9 +711,8 @@
                   <button class="btn" id="btnExplainPA" title="Mostrar/ocultar explicación">Explicación</button>
 </div>
 
-        <div class="footerSingle">
-          Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
-        </div>
+        
+
         <div class="explainBox explainCollapsible" id="paExplain">
           <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
           <div class="explainText">
@@ -721,6 +734,10 @@
             </div>
           </div>
         </div>
+<div class="footerSingle">
+          Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
+        </div>
+        
 
       </div>
     </section>
@@ -1031,6 +1048,8 @@ function makeChartController(opts){
     rightAxis,
     yLabelLeft,
     yLabelRight,
+    yLabelLeftMarkers,
+    yLabelRightMarkers,
     defaultOrderTooltip,
     topN,
     valueSorter,
@@ -1283,7 +1302,19 @@ function makeChartController(opts){
       "text-anchor":"middle", "font-size":13, "font-family":"Arial, system-ui, sans-serif",
       transform: `rotate(-90 18 ${margin.t + plotH/2})`
     });
-    yTitle.textContent = yLabelLeft || "";
+    if (yLabelLeftMarkers && yLabelLeftMarkers.length){
+      yTitle.textContent = "";
+      const t0 = createSvgEl("tspan", {});
+      t0.textContent = yLabelLeft || "";
+      yTitle.appendChild(t0);
+      for (const col of yLabelLeftMarkers){
+        const t = createSvgEl("tspan", { fill: col, dx: 8 });
+        t.textContent = "●";
+        yTitle.appendChild(t);
+      }
+    } else {
+      yTitle.textContent = yLabelLeft || "";
+    }
     gAxes.appendChild(yTitle);
 
     if (yLabelRight){
@@ -1293,7 +1324,19 @@ function makeChartController(opts){
         "text-anchor":"middle", "font-size":13, "font-family":"Arial, system-ui, sans-serif",
         transform: `rotate(90 ${rx} ${margin.t + plotH/2})`
       });
-      yTitleR.textContent = yLabelRight;
+      if (yLabelRightMarkers && yLabelRightMarkers.length){
+        yTitleR.textContent = "";
+        const t0r = createSvgEl("tspan", {});
+        t0r.textContent = yLabelRight;
+        yTitleR.appendChild(t0r);
+        for (const col of yLabelRightMarkers){
+          const tr = createSvgEl("tspan", { fill: col, dx: 8 });
+          tr.textContent = "●";
+          yTitleR.appendChild(tr);
+        }
+      } else {
+        yTitleR.textContent = yLabelRight;
+      }
       gAxes.appendChild(yTitleR);
     }
 
@@ -1788,14 +1831,40 @@ function makeChartController(opts){
       btnExplain.classList.toggle("on", showExplain);
       btnExplain.textContent = "Explicación";
     }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
     if (explainEl){
       explainEl.classList.toggle("open", showExplain);
     }
     if (chartPcEl){
       chartPcEl.classList.toggle("expOpen", showExplain);
     }
+
     if (showExplain && explainEl){
-      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() => {
+        if (chartPcEl){
+          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
     }
   }
 
@@ -2250,14 +2319,40 @@ function makeChartController(opts){
       btnExplain.classList.toggle("on", showExplain);
       btnExplain.textContent = "Explicación";
     }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
     if (explainEl){
       explainEl.classList.toggle("open", showExplain);
     }
     if (chartPcEl){
       chartPcEl.classList.toggle("expOpen", showExplain);
     }
+
     if (showExplain && explainEl){
-      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() => {
+        if (chartPcEl){
+          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
     }
   }
 
@@ -2571,6 +2666,10 @@ function makeChartController(opts){
 
   function rebuild(){
     const seriesDefs = getSeriesDefs();
+    // Marcadores de color en las etiquetas de los ejes (GB)
+    const yLabelLeftMarkers = seriesDefs.filter(s=>s.axis==="left").map(s=>s.color);
+    const yLabelRightMarkers = seriesDefs.filter(s=>s.axis==="right").map(s=>s.color);
+
 
     // y ranges
     const leftKeys = seriesDefs.filter(s=>s.axis==="left").map(s=>s.key);
@@ -2608,6 +2707,8 @@ function makeChartController(opts){
       rightAxis: { ticks: rightTicks, formatTick: (v)=>String(v) },
       yLabelLeft: "Miles de millones de € (1986)",
       yLabelRight: "Miles de € por persona (1986)",
+      yLabelLeftMarkers,
+      yLabelRightMarkers,
       defaultOrderTooltip: seriesDefs.map(s=>s.key),
       topN: 0
     });
