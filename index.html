@@ -382,6 +382,46 @@
     .presStats .psLine .v{ opacity:.98; }
 
 
+    /* --- Formato mandatos (GB): título + líneas en vertical (mejor legibilidad) --- */
+    .presStats .psBlocks{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .presStats .psMandate{
+      padding-top:10px;
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+    .presStats .psMandate:first-child{
+      padding-top:0;
+      border-top:none;
+    }
+    .presStats .psMandateTitle{
+      font-size: calc(14px * var(--uiScale));
+      line-height:1.15;
+      opacity:.92;
+      white-space:pre-line;
+    }
+    .presStats .psMandateTitle .yrs{
+      opacity:.75;
+      margin-left: 0;
+    }
+    .presStats .psMandateLine{
+      margin-top:6px;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      line-height:1.05;
+    }
+    .presStats .psMandateLine .k{
+      opacity:.85;
+    }
+    .presStats .psMandateLine .v{
+      opacity:.98;
+      font-variant-numeric: tabular-nums;
+    }
+
+
 
     /* ===== Ajustes de layout para evitar “apelmazado” en Vistas 2 y 3 ===== */
     #viewGB .pc.chartPc,
@@ -396,6 +436,11 @@
       min-height: 520px;
     }
     #viewGB .presStats{ flex: 0 0 auto; }
+
+    #viewGB #btnExplainGB,
+    #viewPA #btnExplainPA{
+      margin-left: auto;
+    }
 
     .explainBox{
       margin-top: 12px;
@@ -421,6 +466,29 @@
     .explainText code{
       font-size: calc(11px * var(--uiScale));
       color: rgba(255,255,255,.9);
+    }
+
+
+    /* --- Explicación desplegable (GB/PA) --- */
+    .explainCollapsible{
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-4px);
+      transition: max-height .28s ease, opacity .22s ease, transform .22s ease, margin-top .22s ease, padding .22s ease, border-color .22s ease;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      border-color: rgba(255,255,255,0);
+    }
+    .explainCollapsible.open{
+      max-height: 1200px;
+      opacity: 1;
+      transform: translateY(0);
+      padding-top: 12px;
+      padding-bottom: 12px;
+      margin-top: 12px;
+      border-color: var(--stroke);
     }
 
     /* Población (tabla) - Vista GB */
@@ -557,7 +625,8 @@
           <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
           <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
           <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
-        </div>
+                  <button class="btn" id="btnExplainGB" title="Mostrar/ocultar explicación">Explicación</button>
+</div>
 
         <div class="footerSingle">
           Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
@@ -575,7 +644,7 @@
             </table>
           </div>
         </div>
-        <div class="explainBox" id="gbExplain">
+        <div class="explainBox explainCollapsible" id="gbExplain">
           <div class="explainTitle">Cómo leer estas series</div>
           <div class="explainText">
             <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
@@ -625,12 +694,13 @@
 
         <div class="chartControls">
           <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-        </div>
+                  <button class="btn" id="btnExplainPA" title="Mostrar/ocultar explicación">Explicación</button>
+</div>
 
         <div class="footerSingle">
           Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
         </div>
-        <div class="explainBox" id="paExplain">
+        <div class="explainBox explainCollapsible" id="paExplain">
           <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
           <div class="explainText">
             <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
@@ -1706,6 +1776,29 @@ function makeChartController(opts){
     });
   }
 
+
+  // Explicación desplegable
+  const btnExplain = document.getElementById("btnExplainPA");
+  const explainEl = document.getElementById("paExplain");
+  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
+  let showExplain = false;
+
+  function updateExplainUI(){
+    if (btnExplain){
+      btnExplain.classList.toggle("on", showExplain);
+      btnExplain.textContent = "Explicación";
+    }
+    if (explainEl){
+      explainEl.classList.toggle("open", showExplain);
+    }
+    if (chartPcEl){
+      chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }
+
   // ---- lógica original (index funcional.html) ----
   const PENSIONS_LABEL = "Pensiones";
   const PENSIONS_PATTERNS = new Set(["pensiones"]);
@@ -2146,6 +2239,28 @@ function makeChartController(opts){
   let showPop = false;
   let popTableData = [];
 
+  // Explicación desplegable
+  const btnExplain = document.getElementById("btnExplainGB");
+  const explainEl = document.getElementById("gbExplain");
+  const chartPcEl = document.querySelector("#viewGB .pc.chartPc");
+  let showExplain = false;
+
+  function updateExplainUI(){
+    if (btnExplain){
+      btnExplain.classList.toggle("on", showExplain);
+      btnExplain.textContent = "Explicación";
+    }
+    if (explainEl){
+      explainEl.classList.toggle("open", showExplain);
+    }
+    if (chartPcEl){
+      chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }
+
   function fmtPop(v){
     return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
   }
@@ -2359,7 +2474,7 @@ function makeChartController(opts){
 
     const seriesDefs = getSeriesDefs();
 
-    // 1) Totales 1986–2023 (incluye población si está activa)
+    // 1) Totales 1986–2023
     const top = document.createElement("div");
     top.className = "psTop";
 
@@ -2385,31 +2500,39 @@ function makeChartController(opts){
     }
     statsEl.appendChild(top);
 
-    // 2) Por presidencia (solo PIB/Gasto total y per cápita)
-    const grid = document.createElement("div");
-    grid.className = "psGrid";
+    // 2) Por presidencia (formato vertical: título + líneas)
+    const blocks = document.createElement("div");
+    blocks.className = "psBlocks";
 
     const detail = [
-      { label:"PIB",    key:"pib_total",  color:"#00E5FF" },
-      { label:"PIB pc", key:"pib_pc",     color:"#79FF6B" },
-      { label:"Gto",    key:"gasto_total",color:"#FF6A00" },
-      { label:"Gto pc", key:"gasto_pc",   color:"#FF3D8D" },
+      { label:"PIB",    key:"pib_total",   color:"#00E5FF" },
+      { label:"PIB pc", key:"pib_pc",      color:"#79FF6B" },
+      { label:"Gto",    key:"gasto_total", color:"#FF6A00" },
+      { label:"Gto pc", key:"gasto_pc",    color:"#FF3D8D" },
     ];
     const allDetailKeys = detail.map(d=>d.key);
 
     for (const p of PRES_PERIODS){
-      const left = document.createElement("div");
-      left.className = "psLeft";
-      left.style.cursor = "pointer";
-      const nm = (p.name === "José Luis Rodríguez Zapatero") ? "José Luis Rodríguez\nZapatero" : p.name;
-      left.textContent = `${nm}\n${p.start}–${p.end}`;
-      left.innerHTML = left.textContent.replace(/\n(\d{4}–\d{4})$/, '<span class="yrs">$1</span>').split("\n").join("<br>");
+      const blk = document.createElement("div");
+      blk.className = "psMandate";
 
-      left.addEventListener("mouseenter", () => controller.setHighlight(p.start, p.end, allDetailKeys));
-      left.addEventListener("mouseleave", () => controller.clearHighlight());
+      const title = document.createElement("div");
+      title.className = "psMandateTitle";
+      title.style.cursor = "pointer";
 
-      const right = document.createElement("div");
-      right.className = "psRight";
+      // Nombre (con salto para Zapatero como antes) + años pegados (como pides)
+      const nm = (p.name === "José Luis Rodríguez Zapatero")
+        ? "José Luis Rodríguez\nZapatero"
+        : p.name;
+
+      title.innerHTML = (nm + String(p.start) + "–" + String(p.end))
+        .replace(/\n/g, "<br>")
+        .replace(/(\d{4}–\d{4})$/, '<span class="yrs">$1</span>');
+
+      title.addEventListener("mouseenter", () => controller.setHighlight(p.start, p.end, allDetailKeys));
+      title.addEventListener("mouseleave", () => controller.clearHighlight());
+
+      blk.appendChild(title);
 
       for (const d of detail){
         const a = getNearestValue(d.key, p.start);
@@ -2417,14 +2540,14 @@ function makeChartController(opts){
         const g = pctChange(a, b);
 
         const ln = document.createElement("div");
-        ln.className = "psLine";
+        ln.className = "psMandateLine";
         ln.style.cursor = "pointer";
 
-        const k = document.createElement("span");
+        const k = document.createElement("div");
         k.className = "k";
         k.textContent = d.label + ":";
 
-        const v = document.createElement("span");
+        const v = document.createElement("div");
         v.className = "v";
         v.textContent = fmtPctSigned(g);
         v.style.color = d.color;
@@ -2435,20 +2558,13 @@ function makeChartController(opts){
         ln.addEventListener("mouseenter", () => controller.setHighlight(p.start, p.end, [d.key]));
         ln.addEventListener("mouseleave", () => controller.clearHighlight());
 
-        right.appendChild(ln);
+        blk.appendChild(ln);
       }
 
-      grid.appendChild(left);
-      grid.appendChild(right);
+      blocks.appendChild(blk);
     }
 
-    statsEl.appendChild(grid);
-
-    // 3) Explicación (debajo)
-    const explain = document.getElementById("gbExplain");
-    if (explain){
-      explain.style.display = "block";
-    }
+    statsEl.appendChild(blocks);
   }
 
   let controller = null;
@@ -2517,6 +2633,16 @@ function makeChartController(opts){
       showPop = !showPop;
       updatePopUI();
     });
+  }
+
+  if (btnExplain){
+    updateExplainUI();
+    btnExplain.addEventListener("click", () => {
+      showExplain = !showExplain;
+      updateExplainUI();
+    });
+  } else {
+    updateExplainUI();
   }
 
   try{
@@ -2670,6 +2796,17 @@ function makeChartController(opts){
       controller.onShow();
     });
   }
+
+  if (btnExplain){
+    updateExplainUI();
+    btnExplain.addEventListener("click", () => {
+      showExplain = !showExplain;
+      updateExplainUI();
+    });
+  } else {
+    updateExplainUI();
+  }
+
 
   window.__pa = { onShow: () => controller.onShow() };
 })();
