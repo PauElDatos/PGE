@@ -380,6 +380,46 @@
     .presStats .psLine .k{ opacity:.85; }
     .presStats .psLine .v{ opacity:.98; }
 
+
+
+    /* ===== Ajustes de layout para evitar “apelmazado” en Vistas 2 y 3 ===== */
+    #viewGB .pc.chartPc,
+    #viewPA .pc.chartPc{
+      overflow-y: auto;
+    }
+    #viewGB .svgWrap,
+    #viewPA .svgWrap{
+      flex: 0 0 auto;
+      height: clamp(360px, 55vh, 640px);
+      min-height: 360px;
+    }
+    #viewGB .presStats{ flex: 0 0 auto; }
+
+    .explainBox{
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: rgba(255,255,255,.02);
+    }
+    .explainTitle{
+      font-family: var(--fontTitle);
+      color: var(--primary);
+      font-size: calc(14px * var(--uiScale));
+      margin-bottom: 6px;
+      letter-spacing: .2px;
+    }
+    .explainText{
+      font-size: calc(12px * var(--uiScale));
+      line-height: 1.45;
+      color: rgba(176,176,176,.95);
+    }
+    .explainText ul{ margin: 6px 0 0 18px; }
+    .explainText ol{ margin: 6px 0 0 18px; }
+    .explainText code{
+      font-size: calc(11px * var(--uiScale));
+      color: rgba(255,255,255,.9);
+    }
 </style>
 </head>
 
@@ -401,7 +441,7 @@
       <div class="ph">
         <div class="ttl">Políticas</div>
         <div class="sub">
-          <button class="btn" id="btnPre2004" title="Mostrar/ocultar partidas anteriores a 2004">Anteriores a 2004</button>
+          <button class="btn" id="btnPre2004" title="Mostrar/ocultar partidas X999 (las que no tienen equivalencia post-2005)">Anteriores a 2004</button>
         </div>
       </div>
       <div class="pc">
@@ -464,6 +504,7 @@
         <div class="chartControls">
           <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
           <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
+          <button class="btn" id="btnPopGB" title="Mostrar/ocultar población total (millones)">Población: OFF</button>
         </div>
 
         <div class="footerSingle">
@@ -471,6 +512,25 @@
         </div>
 
         <div class="presStats" id="gbPresStats" aria-label="Resumen por presidencias"></div>
+        <div class="explainBox" id="gbExplain">
+          <div class="explainTitle">Cómo leer estas series</div>
+          <div class="explainText">
+            <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
+            <div><b>Per cápita</b> significa “por persona”: se divide entre la <b>población total</b> del año.</div>
+            <div style="margin-top:8px;">
+              Reglas rápidas:
+              <ul>
+                <li>Si el <b>gasto total</b> crece igual que la <b>población</b> → <b>gasto per cápita</b> se mantiene plano.</li>
+                <li>Si la <b>población</b> crece más rápido que el <b>gasto</b> → <b>gasto per cápita</b> baja.</li>
+                <li>Si el <b>gasto</b> crece más rápido que la <b>población</b> → <b>gasto per cápita</b> sube.</li>
+              </ul>
+            </div>
+            <div style="margin-top:6px; opacity:.95;">
+              Tip: pasa el cursor por los porcentajes de cada mandato (PIB / PIB pc / Gto / Gto pc) para resaltar en el gráfico <b>solo ese tramo temporal</b>.
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>
@@ -507,6 +567,28 @@
         <div class="footerSingle">
           Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
         </div>
+        <div class="explainBox" id="paExplain">
+          <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
+          <div class="explainText">
+            <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
+            <div style="margin-top:8px;">
+              El cálculo es:
+              <div style="margin:6px 0 0 0;"><b>Presión (%)</b> = 100 × ( <b>Gasto público real (1986)</b> ÷ <b>PIB real (1986)</b> )</div>
+              <div style="opacity:.95; margin-top:6px;">
+                Equivalentemente (y da el mismo resultado): 100 × ( <b>Gasto per cápita real (1986)</b> ÷ <b>PIB per cápita real (1986)</b> ).
+              </div>
+            </div>
+            <div style="margin-top:8px;">
+              Pasos (resumen):
+              <ol style="margin:6px 0 0 18px;">
+                <li>Partir de PIB y gasto en euros corrientes.</li>
+                <li>Deflactar a euros reales de 1986 (columnas <code>pib_total_eur_a_1986</code> y <code>gasto_publico_eur_a_1986</code>).</li>
+                <li>Dividir para obtener el ratio gasto/PIB y multiplicar por 100.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>
@@ -828,13 +910,28 @@ function makeChartController(opts){
     hoverFocusMode: false,
     crosshairMode: false,
     scaleMode: "exp",
+    highlight: null, // {start,end,keys:Array<string>}
     pathEls: new Map(),
     itemEls: new Map(),
     geom: null,
     rafPending: false,
     lastPointer: null,
     lastFocusKey: "",
+    __bindings: [],
+    __clipSeq: 0,
+    __t: null,
   };
+
+  function bind(el, type, fn){
+    if (!el) return;
+    el.addEventListener(type, fn);
+    state.__bindings.push([el, type, fn]);
+  }
+  function bindWindow(type, fn){
+    window.addEventListener(type, fn);
+    state.__bindings.push([window, type, fn]);
+  }
+
 
   function focusKey(set){
     if (!set || !set.size) return "";
@@ -852,15 +949,25 @@ function makeChartController(opts){
     state.lastFocusKey = key;
 
     const hasFocus = !!(set && set.size);
+    const hk = (state.highlight && state.highlight.keys && state.highlight.keys.length) ? new Set(state.highlight.keys) : null;
     for (const s of seriesList){
       const k = s.key;
       const path = state.pathEls.get(k);
       const it = state.itemEls.get(k);
       const on = !hasFocus || set.has(k);
-      const baseOp = on ? 1.0 : 0.12;
+      let baseOp = on ? 1.0 : 0.12;
+      let sw = on ? 2.35 : 1.6;
+      if (hk){
+        if (!hk.has(k)){
+          baseOp = Math.min(baseOp, 0.10);
+          sw = Math.min(sw, 1.4);
+        } else {
+          baseOp = Math.min(baseOp, 0.35);
+        }
+      }
       if (path){
         path.setAttribute("opacity", String(baseOp));
-        path.setAttribute("stroke-width", on ? "2.35" : "1.6");
+        path.setAttribute("stroke-width", String(sw));
       }
       if (it){
         it.classList.toggle("muted", !on);
@@ -985,11 +1092,14 @@ function makeChartController(opts){
       };
     }
 
+    const defs = createSvgEl("defs");
+
     const gBg = createSvgEl("g");
     const gGrid = createSvgEl("g");
     const gAxes = createSvgEl("g");
     const gLines = createSvgEl("g");
     const gOverlay = createSvgEl("g");
+    const gHi = createSvgEl("g");
 
     if (extraBackground) extraBackground(gBg, xScale, plotRect);
 
@@ -1096,7 +1206,93 @@ function makeChartController(opts){
         "data-key": s.key,
         style: "pointer-events:none;"
       });
-      state.pathEls.set(s.key, path);
+      st
+    // Highlight window (externo) - atenúa fuera del rango y remarca tramo/serie
+    if (state.highlight && state.highlight.start !== null && state.highlight.end !== null){
+      const hs = clamp(state.highlight.start, xDomain.min, xDomain.max);
+      const he = clamp(state.highlight.end, xDomain.min, xDomain.max);
+      const startY = Math.min(hs, he);
+      const endY = Math.max(hs, he);
+      const x0 = xScale(startY);
+      const x1 = xScale(endY);
+
+      const leftW = Math.max(0, x0 - margin.l);
+      const rightW = Math.max(0, (margin.l + plotW) - x1);
+
+      if (leftW > 0){
+        gHi.appendChild(createSvgEl("rect", {
+          x: margin.l, y: margin.t, width: leftW, height: plotH,
+          fill: "rgba(0,0,0,.55)", opacity: 0.28
+        }));
+      }
+      if (rightW > 0){
+        gHi.appendChild(createSvgEl("rect", {
+          x: x1, y: margin.t, width: rightW, height: plotH,
+          fill: "rgba(0,0,0,.55)", opacity: 0.28
+        }));
+      }
+
+      gHi.appendChild(createSvgEl("line", { x1:x0, y1:margin.t, x2:x0, y2:margin.t+plotH, stroke:"rgba(254,247,2,.55)", "stroke-width":1.5, "vector-effect":"non-scaling-stroke" }));
+      gHi.appendChild(createSvgEl("line", { x1:x1, y1:margin.t, x2:x1, y2:margin.t+plotH, stroke:"rgba(254,247,2,.55)", "stroke-width":1.5, "vector-effect":"non-scaling-stroke" }));
+
+      const clipId = "hlClip_" + (++state.__clipSeq);
+      const cp = createSvgEl("clipPath", { id: clipId });
+      cp.appendChild(createSvgEl("rect", { x:x0, y:margin.t, width: Math.max(0, x1-x0), height: plotH }));
+      defs.appendChild(cp);
+
+      const keys = (state.highlight.keys && state.highlight.keys.length)
+        ? state.highlight.keys
+        : seriesList.map(s => s.key);
+
+      for (const k of keys){
+        const basePath = state.pathEls.get(k);
+        if (!basePath) continue;
+        const dAttr = basePath.getAttribute("d");
+        if (!dAttr) continue;
+
+        const sMeta = seriesList.find(s => s.key === k);
+        const col = sMeta ? sMeta.color : "rgba(254,247,2,.95)";
+
+        const hlPath = createSvgEl("path", {
+          d: dAttr, fill:"none", stroke: col,
+          "stroke-width": 3.35, "stroke-linejoin":"round", "stroke-linecap":"round",
+          "vector-effect":"non-scaling-stroke",
+          opacity: 1.0,
+          style: "pointer-events:none;",
+          "clip-path": `url(#${clipId})`
+        });
+        gHi.appendChild(hlPath);
+
+        // marcadores inicio/fin (si podemos interpolar el valor en esos años)
+        const ser = getSeriesForPath(k);
+        if (ser){
+          const vA = interpAtYear(ser, startY);
+          const vB = interpAtYear(ser, endY);
+          const axis = sMeta?.axis || "left";
+
+          function mapY(v){
+            if (v === null || !Number.isFinite(v)) return null;
+            if (axis === "right" && rightAxis && mapRightToLeftT){
+              const yrT = yTransform(v);
+              const ylT = mapRightToLeftT(yrT);
+              return yScaleLeftT(ylT);
+            }
+            return yScaleLeftT(yTransform(v));
+          }
+
+          const yA = mapY(vA);
+          const yB = mapY(vB);
+          if (yA !== null && Number.isFinite(yA)){
+            gHi.appendChild(createSvgEl("circle", { cx:x0, cy:yA, r:4.25, fill:col, stroke:"rgba(0,0,0,.65)", "stroke-width":1 }));
+          }
+          if (yB !== null && Number.isFinite(yB)){
+            gHi.appendChild(createSvgEl("circle", { cx:x1, cy:yB, r:4.25, fill:col, stroke:"rgba(0,0,0,.65)", "stroke-width":1 }));
+          }
+        }
+      }
+    }
+
+ate.pathEls.set(s.key, path);
       gLines.appendChild(path);
     }
 
@@ -1120,10 +1316,12 @@ function makeChartController(opts){
     gOverlay.appendChild(dot);
     gOverlay.appendChild(hit);
 
+    svg.appendChild(defs);
     svg.appendChild(gBg);
     svg.appendChild(gGrid);
     svg.appendChild(gAxes);
     svg.appendChild(gLines);
+    svg.appendChild(gHi);
     svg.appendChild(gOverlay);
 
     state.geom = { w,h, margin, plotW, plotH, xScale, yScaleLeftT, yTransform, mapRightToLeftT, crosshair, dot, hit };
@@ -1337,14 +1535,14 @@ function makeChartController(opts){
 
   function setControls(){
     if (controls && controls.btnScale){
-      controls.btnScale.addEventListener("click", () => {
+      bind(controls.btnScale, "click", () => {
         state.scaleMode = (state.scaleMode === "exp") ? "log" : "exp";
         controls.btnScale.textContent = "Escala: " + (state.scaleMode === "log" ? "Logarítmica" : "Exponencial");
         draw();
       });
     }
     if (controls && controls.btnCrosshair){
-      controls.btnCrosshair.addEventListener("click", () => {
+      bind(controls.btnCrosshair, "click", () => {
         state.crosshairMode = !state.crosshairMode;
         controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
         controls.btnCrosshair.classList.toggle("on", state.crosshairMode);
@@ -1354,7 +1552,7 @@ function makeChartController(opts){
       });
     }
     if (controls && controls.btnHoverFocus){
-      controls.btnHoverFocus.addEventListener("click", () => {
+      bind(controls.btnHoverFocus, "click", () => {
         state.hoverFocusMode = !state.hoverFocusMode;
         controls.btnHoverFocus.textContent = "Resaltar al pasar: " + (state.hoverFocusMode ? "ON" : "OFF");
         controls.btnHoverFocus.classList.toggle("on", state.hoverFocusMode);
@@ -1362,7 +1560,7 @@ function makeChartController(opts){
       });
     }
     if (controls && controls.btnReset){
-      controls.btnReset.addEventListener("click", () => {
+      bind(controls.btnReset, "click", () => {
         state.focusSet = null;
         state.hoverKey = null;
         tooltipEl.style.display = "none";
@@ -1375,17 +1573,35 @@ function makeChartController(opts){
   setControls();
   draw();
 
-  window.addEventListener("resize", () => {
+  bindWindow("resize", () => {
     clearTimeout(state.__t);
     state.__t = setTimeout(() => draw(), 120);
   });
 
+  function setHighlight(start, end, keys){
+    state.highlight = { start, end, keys: Array.isArray(keys) ? keys : null };
+    draw();
+  }
+  function clearHighlight(){
+    state.highlight = null;
+    draw();
+  }
+  function destroy(){
+    for (const [el, type, fn] of state.__bindings){
+      try{ el.removeEventListener(type, fn); } catch(_){}
+    }
+    state.__bindings.length = 0;
+  }
+
   return {
     onShow: () => draw(),
+    setHighlight,
+    clearHighlight,
+    destroy,
   };
 }
 
-/* ===================== Vista 1: PGE ===================== */
+/* ===================== Vista 1: PGE (misma lógica que index funcional.html; X999 y Seguridad Social) ===================== */
 (async function(){
   const svg = document.getElementById("chartSvg");
   const wrap = document.getElementById("svgWrap");
@@ -1428,32 +1644,291 @@ function makeChartController(opts){
     });
   }
 
+  // ---- lógica original (index funcional.html) ----
+  const PENSIONS_LABEL = "Pensiones";
+  const PENSIONS_PATTERNS = new Set(["pensiones"]);
+  const OTROS_LABEL = "otros";
+
+  const OLD31_EQUIV_LABEL = "Seguridad Social";
+  const OLD31_CUTOFF_YEAR = 2005;
+  const OLD31_POST2005_IDS = new Set(["21","22","23","25","29"]);
+  const OLD31_POST2005_NAME_PATTERNS = new Set([
+    "pensiones",
+    "otras prestaciones economicas",
+    "servicios sociales y promocion social",
+    "desempleo",
+  ]);
+  const OLD31_PRE2005_NAMES = new Set([
+    "seguridad social y proteccion social",
+    "seguridad y proteccion social",
+  ]);
+
+  function isGestionSS(nameNorm){
+    return nameNorm.includes("gestion") && nameNorm.includes("seguridad social");
+  }
+
+  function sortKeyId(idv){
+    const s = String(idv ?? "").trim();
+    let m = s.match(/^0*(\d+)$/);
+    if (m) return [0, Number(m[1]), s];
+    m = s.match(/^[xX](\d+)$/);
+    if (m) return [1, Number(m[1]), s];
+    return [2, 0, s];
+  }
+
+  function hsvToRgb(h,s,v){
+    let r=0,g=0,b=0;
+    const i = Math.floor(h*6);
+    const f = h*6 - i;
+    const p = v*(1-s);
+    const q = v*(1-f*s);
+    const t = v*(1-(1-f)*s);
+    switch(i%6){
+      case 0: r=v; g=t; b=p; break;
+      case 1: r=q; g=v; b=p; break;
+      case 2: r=p; g=v; b=t; break;
+      case 3: r=p; g=q; b=v; break;
+      case 4: r=t; g=p; b=v; break;
+      case 5: r=v; g=p; b=q; break;
+    }
+    const rr = Math.round(r*255), gg=Math.round(g*255), bb=Math.round(b*255);
+    return `rgb(${rr},${gg},${bb})`;
+  }
+  function colorList(n, sat=0.9, val=1.0){
+    const cols=[];
+    for (let i=0;i<n;i++) cols.push(hsvToRgb(i/n, sat, val));
+    return cols;
+  }
+
+  function prepararSeriesPct(pol, meta1){
+    const colsPol = pol.headers;
+    const rowsPol = pol.rows;
+
+    const c_id   = pickCol(colsPol, ["id_politica", "id politica"]);
+    const c_year = pickCol(colsPol, ["año","ano","anio","year"]);
+    const c_pol  = pickCol(colsPol, ["politica","política"]);
+    const c_val  = pickCol(colsPol, ["presupuesto","presupuesto gasto","valor","importe","amount"]);
+    if (!c_id || !c_year || !c_pol || !c_val) return null;
+
+    const base = [];
+    for (const r of rowsPol){
+      const id = String(r[c_id] ?? "").trim();
+      const year = Math.trunc(toNum(r[c_year]));
+      const polName = String(r[c_pol] ?? "").trim();
+      const val = toNum(r[c_val]);
+      if (!id || !Number.isFinite(year) || !polName || !Number.isFinite(val)) continue;
+      base.push({
+        id,
+        year,
+        pol: polName,
+        val,
+        pol_norm: stripAccentsLower(polName),
+        id_norm: String(id).trim(),
+      });
+    }
+    if (!base.length) return null;
+
+    // metadata (orden + nombres)
+    const meta1_sorted = [];
+    if (meta1 && meta1.headers && meta1.rows && meta1.rows.length){
+      const colsM1 = meta1.headers;
+      const rowsM1 = meta1.rows;
+      const c_m1_id  = pickCol(colsM1, ["id_politica","id politica"], false);
+      const c_m1_pol = pickCol(colsM1, ["politica","política","policy"], false);
+
+      if (c_m1_id && c_m1_pol){
+        for (const r of rowsM1){
+          const id = String(r[c_m1_id] ?? "").trim();
+          const pol = String(r[c_m1_pol] ?? "").trim();
+          if (id && pol) meta1_sorted.push({ id, pol });
+        }
+        meta1_sorted.sort((a,b)=>{
+          const ka = sortKeyId(a.id);
+          const kb = sortKeyId(b.id);
+          return ka[0]-kb[0] || ka[1]-kb[1] || ka[2].localeCompare(kb[2]);
+        });
+      }
+    }
+
+    const id_to_name = new Map();
+    for (const row of meta1_sorted){
+      const idp = row.id;
+      const nm = row.pol;
+      if (!idp || idp === "X999") continue;
+      const nm_norm = stripAccentsLower(nm);
+      const label = (PENSIONS_PATTERNS.has(nm_norm) || idp === "05") ? PENSIONS_LABEL : nm;
+      if (!id_to_name.has(idp)) id_to_name.set(idp, label);
+    }
+
+    function clasificar(idp, pol_name){
+      idp = String(idp ?? "").trim();
+      pol_name = String(pol_name ?? "").trim();
+      const pol_norm = stripAccentsLower(pol_name);
+
+      if (PENSIONS_PATTERNS.has(pol_norm) || idp === "05") return [PENSIONS_LABEL, "main"];
+      if (id_to_name.has(idp)) return [id_to_name.get(idp), "main"];
+      if (idp === "X999"){
+        const label = pol_name ? pol_name : OTROS_LABEL;
+        return [label, "x999"];
+      }
+      return [OTROS_LABEL, "otros"];
+    }
+
+    // agrega por política (label) y año
+    const gMap = new Map();
+    const labelTipo = new Map();
+    for (const r of base){
+      const [lab, tp] = clasificar(r.id, r.pol);
+      const key = lab + "||" + r.year;
+      gMap.set(key, (gMap.get(key) || 0) + r.val);
+      if (!labelTipo.has(lab)) labelTipo.set(lab, tp);
+    }
+
+    let g = [];
+    for (const [key, sum] of gMap.entries()){
+      const [lab, y] = key.split("||");
+      const year = Number(y);
+      const lab_norm = stripAccentsLower(lab);
+      g.push({
+        Label: lab,
+        Año: year,
+        Valor: sum,
+        Label_norm: lab_norm,
+        __is_gestion_ss: isGestionSS(lab_norm),
+      });
+    }
+
+    // compatibilidad Seguridad Social pre/post 2005 (misma lógica antigua)
+    g = g.filter(row => {
+      if (row.Año < OLD31_CUTOFF_YEAR) return true;
+      const ln = row.Label_norm;
+      const isComp = (ln === "pensiones") || OLD31_POST2005_NAME_PATTERNS.has(ln) || row.__is_gestion_ss;
+      return !isComp;
+    });
+
+    g = g.filter(row => {
+      if (row.Año >= OLD31_CUTOFF_YEAR) return true;
+      return !OLD31_PRE2005_NAMES.has(row.Label_norm);
+    });
+
+    const preMap = new Map();
+    for (const r of base){
+      if (r.year < OLD31_CUTOFF_YEAR && OLD31_PRE2005_NAMES.has(r.pol_norm)){
+        preMap.set(r.year, (preMap.get(r.year)||0) + r.val);
+      }
+    }
+    const postMap = new Map();
+    for (const r of base){
+      if (r.year >= OLD31_CUTOFF_YEAR){
+        const isPost = OLD31_POST2005_IDS.has(r.id_norm) ||
+                       OLD31_POST2005_NAME_PATTERNS.has(r.pol_norm) ||
+                       isGestionSS(r.pol_norm);
+        if (isPost){
+          postMap.set(r.year, (postMap.get(r.year)||0) + r.val);
+        }
+      }
+    }
+
+    const comp = [];
+    for (const [year,val] of preMap.entries()) comp.push({ Label: OLD31_EQUIV_LABEL, Año: year, Valor: val });
+    for (const [year,val] of postMap.entries()) comp.push({ Label: OLD31_EQUIV_LABEL, Año: year, Valor: val });
+    comp.sort((a,b)=>a.Año-b.Año);
+
+    const g2 = g.map(r => ({ Label:r.Label, Año:r.Año, Valor:r.Valor })).concat(comp);
+
+    const totMap = new Map();
+    for (const r of base){
+      totMap.set(r.year, (totMap.get(r.year)||0) + r.val);
+    }
+
+    const pctRows = [];
+    for (const r of g2){
+      const total = totMap.get(r.Año) || NaN;
+      if (!Number.isFinite(total) || total === 0) continue;
+      pctRows.push({
+        Label: r.Label,
+        Año: r.Año,
+        Porcentaje: (r.Valor/total)*100,
+      });
+    }
+
+    const legend_labels = [];
+    for (const row of meta1_sorted){
+      const idp = row.id;
+      const nm = row.pol;
+      if (!idp || idp === "X999") continue;
+      const nm_norm = stripAccentsLower(nm);
+      const lab = (PENSIONS_PATTERNS.has(nm_norm) || idp === "05") ? PENSIONS_LABEL : nm;
+      if (!legend_labels.includes(lab)) legend_labels.push(lab);
+    }
+    if (!legend_labels.includes(OLD31_EQUIV_LABEL)) legend_labels.push(OLD31_EQUIV_LABEL);
+    if (!legend_labels.includes(OTROS_LABEL)) legend_labels.push(OTROS_LABEL);
+
+    const labelsExist = new Set(pctRows.map(r => r.Label));
+    const labels_main = legend_labels.filter(lab => labelsExist.has(lab) || lab === OTROS_LABEL);
+
+    const x999_labels = Array.from(labelTipo.entries())
+      .filter(([lab,tp]) => tp === "x999")
+      .map(([lab]) => lab)
+      .sort((a,b)=>a.localeCompare(b, "es"));
+
+    const byLabel = new Map();
+    for (const r of pctRows){
+      if (!byLabel.has(r.Label)) byLabel.set(r.Label, []);
+      byLabel.get(r.Label).push([r.Año, r.Porcentaje]);
+    }
+
+    const series = new Map();
+    let allYears = new Set();
+    for (const [lab, pts] of byLabel.entries()){
+      pts.sort((a,b)=>a[0]-b[0]);
+      if (pts.length < 2) continue;
+      const xs = pts.map(p=>p[0]);
+      const ys = pts.map(p=>p[1]);
+      xs.forEach(y=>allYears.add(y));
+      series.set(lab, { xs, ys });
+    }
+    const years = Array.from(allYears).sort((a,b)=>a-b);
+    return { series, labels_main, x999_labels, years };
+  }
+
   const app = {
-    showPre2004: false,
-    seriesByKey: new Map(),   // key -> {xs,ys} pct
-    yearValueByKey: new Map(),// key -> Map(year->pct)
-    keyInfo: new Map(),       // key -> {label,color,pre2004,peak}
-    allKeys: [],
-    xDomain: {min: 1986, max: 2023},
+    showPre2004: false,     // X999
+    seriesByKey: new Map(), // label -> {xs,ys}
+    yearValueByKey: new Map(), // label -> Map(year->pct)
+    keyInfo: new Map(),     // label -> {label,color,type}
+    labelsMain: [],
+    x999Labels: [],
+    xDomain: {min:1986, max:2023},
   };
 
   function formatPct(v){ return Number.isFinite(v) ? (v.toFixed(2) + "%") : "—"; }
 
   function buildSeriesList(){
-    const keys = app.allKeys.slice();
-    keys.sort((a,b)=> (app.keyInfo.get(b)?.peak||0) - (app.keyInfo.get(a)?.peak||0));
-
     const out = [];
-    for (const k of keys){
-      const info = app.keyInfo.get(k);
-      if (!app.showPre2004 && info?.pre2004) continue;
+    for (const lab of app.labelsMain){
+      if (!app.seriesByKey.has(lab)) continue;
+      const info = app.keyInfo.get(lab);
       out.push({
-        key: k,
-        label: info?.label || k,
+        key: lab,
+        label: lab,
         color: info?.color || "rgba(176,176,176,.7)",
-        badge: info?.pre2004 ? "pre-2004" : "",
-        axis: "left"
+        badge: "",
+        axis: "left",
       });
+    }
+    if (app.showPre2004){
+      for (const lab of app.x999Labels){
+        if (!app.seriesByKey.has(lab)) continue;
+        const info = app.keyInfo.get(lab);
+        out.push({
+          key: lab,
+          label: lab,
+          color: info?.color || "rgba(176,176,176,.55)",
+          badge: "pre-2004",
+          axis: "left",
+        });
+      }
     }
     return out;
   }
@@ -1486,8 +1961,6 @@ function makeChartController(opts){
     return Number.isFinite(v) ? v : null;
   }
   function getSeriesForPath(key){
-    const info = app.keyInfo.get(key);
-    if (!app.showPre2004 && info?.pre2004) return null;
     return app.seriesByKey.get(key) || null;
   }
 
@@ -1504,93 +1977,41 @@ function makeChartController(opts){
     ]);
 
     const pol = parseCSV(polTxt);
-    const headers = pol.headers;
-    const cId = pickCol(headers, ["id_politica","id politica"]);
-    const cYear = pickCol(headers, ["año","ano","anio","year"]);
-    const cPol = pickCol(headers, ["politica","política","policy"]);
-    const cVal = pickCol(headers, ["presupuesto","presupuesto gasto","valor","importe","amount"]);
+    const m1 = (m1Txt && m1Txt.trim()) ? parseCSV(m1Txt) : null;
 
-    if (!cId || !cYear || !cPol || !cVal){
-      throw new Error("pge_politicas.csv: faltan columnas requeridas (id, año, política, presupuesto).");
-    }
-
-    // meta name
-    let idToName = new Map();
-    if (m1Txt && m1Txt.trim()){
-      const m1 = parseCSV(m1Txt);
-      const mh = m1.headers;
-      const mId = pickCol(mh, ["id_politica","id politica"]);
-      const mPol = pickCol(mh, ["politica","política","policy"]);
-      if (mId && mPol){
-        for (const r of m1.rows){
-          const id = String(r[mId] ?? "").trim();
-          const nm = String(r[mPol] ?? "").trim();
-          if (id && nm) idToName.set(id, nm);
-        }
-      }
-    }
-
-    const rows = [];
-    for (const r of pol.rows){
-      const id = String(r[cId] ?? "").trim();
-      const year = Math.round(toNum(r[cYear]));
-      const rawName = String(r[cPol] ?? "").trim();
-      const name = idToName.get(id) || rawName || id;
-      const val = toNum(r[cVal]);
-      if (!id || !Number.isFinite(year) || !Number.isFinite(val)) continue;
-      rows.push({ id, year, name, val });
-    }
-    if (!rows.length) throw new Error("pge_politicas.csv no tiene filas válidas.");
-
-    const minYear = rows.reduce((m,r)=>Math.min(m,r.year), Infinity);
-    const maxYear = rows.reduce((m,r)=>Math.max(m,r.year), -Infinity);
-    app.xDomain = { min: minYear, max: maxYear };
-
-    const totalByYear = new Map();
-    for (const r of rows){
-      totalByYear.set(r.year, (totalByYear.get(r.year)||0) + r.val);
-    }
-
-    const byKey = new Map();       // name -> Map(year->pct)
-    const minYearByKey = new Map();// name -> minYear
-    for (const r of rows){
-      const tot = totalByYear.get(r.year) || 0;
-      if (!(tot > 0)) continue;
-      const pct = (r.val / tot) * 100;
-      const key = r.name;
-
-      if (!byKey.has(key)) byKey.set(key, new Map());
-      byKey.get(key).set(r.year, pct);
-
-      minYearByKey.set(key, Math.min(minYearByKey.get(key) ?? Infinity, r.year));
-    }
-
-    const keys = Array.from(byKey.keys());
-    keys.sort((a,b)=> stripAccentsLower(a).localeCompare(stripAccentsLower(b)));
-
-    const colorMap = new Map();
-    for (let i=0;i<keys.length;i++){
-      colorMap.set(keys[i], makeHSVColor(i, keys.length));
+    const prep = prepararSeriesPct(pol, m1);
+    if (!prep || !prep.series || !prep.series.size){
+      throw new Error("No se pudieron preparar las series de PGE (revisa pge_politicas.csv / metadata).");
     }
 
     app.seriesByKey.clear();
     app.yearValueByKey.clear();
     app.keyInfo.clear();
 
-    for (const k of keys){
-      const mp = byKey.get(k);
-      const xs = Array.from(mp.keys()).sort((a,b)=>a-b);
-      const ys = xs.map(x => mp.get(x));
-      app.seriesByKey.set(k, { xs, ys });
-      app.yearValueByKey.set(k, mp);
+    app.labelsMain = prep.labels_main || [];
+    app.x999Labels = prep.x999_labels || [];
 
-      const minY = minYearByKey.get(k) ?? minYear;
-      const pre2004 = minY < 2004;
-      const peak = ys.reduce((m,v)=>Number.isFinite(v)?Math.max(m,v):m, 0);
+    // Dominio X
+    const years = (prep.years && prep.years.length) ? prep.years : [];
+    app.xDomain = { min: years[0] ?? 1986, max: years[years.length-1] ?? 2023 };
 
-      app.keyInfo.set(k, { label:k, color:colorMap.get(k), pre2004, peak });
+    // Colores: main brillante, x999 más apagado, "otros" gris
+    const mainCols = colorList(app.labelsMain.length, 0.9, 1.0);
+    const xCols = colorList(app.x999Labels.length, 0.35, 0.95);
+    const colorMap = new Map();
+    app.labelsMain.forEach((lab,i)=> colorMap.set(lab, mainCols[i] || "rgb(176,176,176)"));
+    app.x999Labels.forEach((lab,i)=> colorMap.set(lab, xCols[i] || "rgba(176,176,176,.55)"));
+    colorMap.set(OTROS_LABEL, "rgba(176,176,176,.85)");
+
+    for (const [lab, ser] of prep.series.entries()){
+      app.seriesByKey.set(lab, ser);
+      const mp = new Map();
+      for (let i=0;i<ser.xs.length;i++) mp.set(ser.xs[i], ser.ys[i]);
+      app.yearValueByKey.set(lab, mp);
+
+      const tp = app.x999Labels.includes(lab) ? "x999" : "main";
+      app.keyInfo.set(lab, { label: lab, color: colorMap.get(lab), type: tp });
     }
-    app.allKeys = keys;
   }
 
   try{
@@ -1605,7 +2026,8 @@ function makeChartController(opts){
   function rebuild(){
     const series = buildSeriesList();
     const yMax = computeYMax(series.map(s=>s.key));
-    const controller = makeChartController({
+    if (controller) controller.destroy();
+    controller = makeChartController({
       svg, wrap, tooltipEl, errorEl,
       legendEl,
       controls,
@@ -1626,14 +2048,17 @@ function makeChartController(opts){
     window.__pge = { onShow: () => controller.onShow() };
   }
 
-  btnPre2004.addEventListener("click", () => {
-    app.showPre2004 = !app.showPre2004;
-    btnPre2004.classList.toggle("on", app.showPre2004);
-    rebuild();
-  });
+  if (btnPre2004){
+    btnPre2004.addEventListener("click", () => {
+      app.showPre2004 = !app.showPre2004;
+      btnPre2004.classList.toggle("on", app.showPre2004);
+      rebuild();
+    });
+  }
 
   rebuild();
 })();
+
 
 /* ===================== Vista 2: Gasto vs beneficio (PIB & Gasto) ===================== */
 (async function(){
@@ -1642,24 +2067,24 @@ function makeChartController(opts){
   const tooltipEl = document.getElementById("tooltipGB");
   const errorEl = document.getElementById("errorBoxGB");
   const legendEl = document.getElementById("legendGB");
+  const statsEl = document.getElementById("gbPresStats");
 
   const controls = {
     btnCrosshair: document.getElementById("btnCrosshairGB"),
   };
 
   const btnPolBands = document.getElementById("btnPolBandsGB");
+  const btnPop = document.getElementById("btnPopGB");
   let showPresBands = true;
-  if (btnPolBands){
-    btnPolBands.classList.toggle("on", showPresBands);
-    btnPolBands.textContent = "Políticos: " + (showPresBands ? "ON" : "OFF");
-  }
+  let showPop = false;
 
-  const SERIES = [
-    { key:"pib_total",  label:"PIB total",              color:"#00E5FF", axis:"left",  unit:"B€" },
-    { key:"gasto_total",label:"Gasto público total",    color:"#FF6A00", axis:"left",  unit:"B€" },
-    { key:"pib_pc",     label:"PIB per cápita",         color:"#79FF6B", axis:"right", unit:"k€" },
-    { key:"gasto_pc",   label:"Gasto público per cápita",color:"#FF3D8D",axis:"right", unit:"k€" },
+  const BASE_SERIES = [
+    { key:"pib_total",   label:"PIB total",                 color:"#00E5FF", axis:"left",  unit:"B€" },
+    { key:"gasto_total", label:"Gasto público total",       color:"#FF6A00", axis:"left",  unit:"B€" },
+    { key:"pib_pc",      label:"PIB per cápita",            color:"#79FF6B", axis:"right", unit:"k€" },
+    { key:"gasto_pc",    label:"Gasto público per cápita",  color:"#FF3D8D", axis:"right", unit:"k€" },
   ];
+  const POP_SERIES = { key:"poblacion_total", label:"Población total", color:"rgba(176,176,176,.9)", axis:"right", unit:"M" };
 
   const app = {
     xDomain: { min: 1986, max: 2023 },
@@ -1667,12 +2092,16 @@ function makeChartController(opts){
     yearVal: new Map(),     // key -> Map(year->v)
   };
 
+  function getSeriesDefs(){
+    return showPop ? BASE_SERIES.concat([POP_SERIES]) : BASE_SERIES.slice();
+  }
+
   function formatVal(key, v){
     if (!Number.isFinite(v)) return "—";
-    const s = SERIES.find(x => x.key === key);
-    if (!s) return v.toFixed(1);
+    const s = getSeriesDefs().find(x => x.key === key) || BASE_SERIES.find(x=>x.key===key) || POP_SERIES;
     if (s.unit === "B€") return v.toFixed(1) + " B€";
     if (s.unit === "k€") return v.toFixed(1) + " k€";
+    if (s.unit === "M")  return v.toFixed(2) + " M";
     return v.toFixed(1);
   }
 
@@ -1705,24 +2134,28 @@ function makeChartController(opts){
     const h = csv.headers;
 
     const cYear = pickCol(h, ["anio","año","year"]);
+    const cPop  = pickCol(h, ["poblacion_total","población_total","poblacion"]);
     const cPIB  = pickCol(h, ["pib_total_eur_a_1986"]);
     const cGTO  = pickCol(h, ["gasto_publico_eur_a_1986"]);
     const cPIBPC= pickCol(h, ["pib_per_capita_eur_a_1986"]);
     const cGTOPC= pickCol(h, ["gasto_publico_per_capita_eur_a_1986"]);
 
-    if (!cYear || !cPIB || !cGTO || !cPIBPC || !cGTOPC){
-      throw new Error("indicadores_estado_a_1986.csv: faltan columnas requeridas para esta vista.");
+    if (!cYear || !cPIB || !cGTO || !cPIBPC || !cGTOPC || !cPop){
+      throw new Error("indicadores_estado_a_1986.csv: faltan columnas requeridas (anio, poblacion_total, pib/gasto a 1986, per cápita).");
     }
 
     const rows = [];
     for (const r of csv.rows){
       const year = Math.round(toNum(r[cYear]));
       if (!Number.isFinite(year)) continue;
-      const pib = toNum(r[cPIB]);
-      const gto = toNum(r[cGTO]);
-      const pibpc = toNum(r[cPIBPC]);
-      const gtopc = toNum(r[cGTOPC]);
-      rows.push({ year, pib, gto, pibpc, gtopc });
+      rows.push({
+        year,
+        pop: toNum(r[cPop]),
+        pib: toNum(r[cPIB]),
+        gto: toNum(r[cGTO]),
+        pibpc: toNum(r[cPIBPC]),
+        gtopc: toNum(r[cGTOPC]),
+      });
     }
     if (!rows.length) throw new Error("indicadores_estado_a_1986.csv no tiene filas válidas.");
 
@@ -1730,20 +2163,30 @@ function makeChartController(opts){
     const maxY = rows.reduce((m,r)=>Math.max(m,r.year), -Infinity);
     app.xDomain = { min: Math.max(1986, minY), max: Math.min(2023, maxY) };
 
-    const baseMaps = new Map(SERIES.map(s => [s.key, new Map()]));
+    const baseMaps = new Map([
+      ["pib_total", new Map()],
+      ["gasto_total", new Map()],
+      ["pib_pc", new Map()],
+      ["gasto_pc", new Map()],
+      ["poblacion_total", new Map()],
+    ]);
+
     for (const r of rows){
       if (r.year < app.xDomain.min || r.year > app.xDomain.max) continue;
       baseMaps.get("pib_total").set(r.year, Number.isFinite(r.pib) ? r.pib/1e9 : NaN);
       baseMaps.get("gasto_total").set(r.year, Number.isFinite(r.gto) ? r.gto/1e9 : NaN);
       baseMaps.get("pib_pc").set(r.year, Number.isFinite(r.pibpc) ? r.pibpc/1000 : NaN);
       baseMaps.get("gasto_pc").set(r.year, Number.isFinite(r.gtopc) ? r.gtopc/1000 : NaN);
+      baseMaps.get("poblacion_total").set(r.year, Number.isFinite(r.pop) ? r.pop/1e6 : NaN);
     }
 
     const years = [];
     for (let y=app.xDomain.min; y<=app.xDomain.max; y++) years.push(y);
 
-    for (const s of SERIES){
-      const ymap = baseMaps.get(s.key);
+    app.series.clear();
+    app.yearVal.clear();
+
+    for (const [k, ymap] of baseMaps.entries()){
       const out = new Map();
       let last = null;
       for (const y of years){
@@ -1755,7 +2198,7 @@ function makeChartController(opts){
           last = v;
         }
       }
-      app.yearVal.set(s.key, out);
+      app.yearVal.set(k, out);
 
       const xs = [];
       const ys = [];
@@ -1766,67 +2209,9 @@ function makeChartController(opts){
           ys.push(vv);
         }
       }
-      app.series.set(s.key, { xs, ys });
+      app.series.set(k, { xs, ys });
     }
   }
-
-  try{
-    await loadGB();
-  } catch(e){
-    errorEl.style.display = "flex";
-    errorEl.textContent = e.message || String(e);
-    window.__gb = { onShow: ()=>{} };
-    return;
-  }
-
-  // y ranges
-  const leftKeys = SERIES.filter(s=>s.axis==="left").map(s=>s.key);
-  const rightKeys= SERIES.filter(s=>s.axis==="right").map(s=>s.key);
-
-  let yLmax = 1, yRmax = 1;
-  for (const k of leftKeys){
-    const ser = app.series.get(k);
-    if (!ser) continue;
-    for (const v of ser.ys) if (Number.isFinite(v)) yLmax = Math.max(yLmax, v);
-  }
-  for (const k of rightKeys){
-    const ser = app.series.get(k);
-    if (!ser) continue;
-    for (const v of ser.ys) if (Number.isFinite(v)) yRmax = Math.max(yRmax, v);
-  }
-  yLmax *= 1.06;
-  yRmax *= 1.06;
-
-  function buildTicks(maxV){
-    const step = niceStepY(maxV);
-    const top = Math.ceil(maxV/step)*step;
-    const out = [];
-    for (let v=0; v<=top+1e-9; v+=step) out.push(Number(v.toFixed(10)));
-    return out;
-  }
-
-  const rightTicks = buildTicks(yRmax);
-
-  const controller = makeChartController({
-    svg, wrap, tooltipEl, errorEl,
-    legendEl,
-    controls,
-    seriesList: SERIES.map(s => ({ key:s.key, label:s.label, color:s.color, axis:s.axis })),
-    getValueAtYear,
-    getSeriesForPath,
-    xDomain: app.xDomain,
-    yDomain: { left: { min: 0, max: yLmax } },
-    formatValue: (k,v)=>formatVal(k,v),
-    extraBackground,
-    rightAxis: { ticks: rightTicks, formatTick: (v)=>String(v) },
-    yLabelLeft: "Miles de millones de € (1986)",
-    yLabelRight: "Miles de € por persona (1986)",
-    defaultOrderTooltip: ["pib_total","gasto_total","pib_pc","gasto_pc"],
-    topN: 0
-  });
-
-  // ---------- Bloque resumen por presidencias (debajo del gráfico) ----------
-  const statsEl = document.getElementById("gbPresStats");
 
   function pctChange(v0, v1){
     if (!Number.isFinite(v0) || !Number.isFinite(v1) || v0 === 0) return null;
@@ -1854,15 +2239,25 @@ function makeChartController(opts){
     return Number.isFinite(v) ? v : null;
   }
 
-  function renderPresStats(){
+  function buildTicks(maxV){
+    const step = niceStepY(maxV);
+    const top = Math.ceil(maxV/step)*step;
+    const out = [];
+    for (let v=0; v<=top+1e-9; v+=step) out.push(Number(v.toFixed(10)));
+    return out;
+  }
+
+  function renderPresStats(controller){
     if (!statsEl) return;
     statsEl.innerHTML = "";
 
-    // 1) Totales 1986–2023
+    const seriesDefs = getSeriesDefs();
+
+    // 1) Totales 1986–2023 (incluye población si está activa)
     const top = document.createElement("div");
     top.className = "psTop";
 
-    for (const s of SERIES){
+    for (const s of seriesDefs){
       const v0 = getNearestValue(s.key, app.xDomain.min);
       const v1 = getNearestValue(s.key, app.xDomain.max);
       const g = pctChange(v0, v1);
@@ -1884,7 +2279,7 @@ function makeChartController(opts){
     }
     statsEl.appendChild(top);
 
-    // 2) Por presidencia
+    // 2) Por presidencia (solo PIB/Gasto total y per cápita)
     const grid = document.createElement("div");
     grid.className = "psGrid";
 
@@ -1894,14 +2289,18 @@ function makeChartController(opts){
       { label:"Gto",    key:"gasto_total",color:"#FF6A00" },
       { label:"Gto pc", key:"gasto_pc",   color:"#FF3D8D" },
     ];
+    const allDetailKeys = detail.map(d=>d.key);
 
     for (const p of PRES_PERIODS){
       const left = document.createElement("div");
       left.className = "psLeft";
+      left.style.cursor = "pointer";
       const nm = (p.name === "José Luis Rodríguez Zapatero") ? "José Luis Rodríguez\nZapatero" : p.name;
       left.textContent = `${nm}\n${p.start}–${p.end}`;
-      // años ligeramente más suaves
       left.innerHTML = left.textContent.replace(/\n(\d{4}–\d{4})$/, '<span class="yrs">$1</span>').split("\n").join("<br>");
+
+      left.addEventListener("mouseenter", () => controller.setHighlight(p.start, p.end, allDetailKeys));
+      left.addEventListener("mouseleave", () => controller.clearHighlight());
 
       const right = document.createElement("div");
       right.className = "psRight";
@@ -1913,6 +2312,7 @@ function makeChartController(opts){
 
         const ln = document.createElement("div");
         ln.className = "psLine";
+        ln.style.cursor = "pointer";
 
         const k = document.createElement("span");
         k.className = "k";
@@ -1925,6 +2325,10 @@ function makeChartController(opts){
 
         ln.appendChild(k);
         ln.appendChild(v);
+
+        ln.addEventListener("mouseenter", () => controller.setHighlight(p.start, p.end, [d.key]));
+        ln.addEventListener("mouseleave", () => controller.clearHighlight());
+
         right.appendChild(ln);
       }
 
@@ -1933,21 +2337,97 @@ function makeChartController(opts){
     }
 
     statsEl.appendChild(grid);
+
+    // 3) Explicación (debajo)
+    const explain = document.getElementById("gbExplain");
+    if (explain){
+      explain.style.display = "block";
+    }
   }
 
-  renderPresStats();
+  let controller = null;
 
+  function rebuild(){
+    const seriesDefs = getSeriesDefs();
+
+    // y ranges
+    const leftKeys = seriesDefs.filter(s=>s.axis==="left").map(s=>s.key);
+    const rightKeys= seriesDefs.filter(s=>s.axis==="right").map(s=>s.key);
+
+    let yLmax = 1, yRmax = 1;
+    for (const k of leftKeys){
+      const ser = app.series.get(k);
+      if (!ser) continue;
+      for (const v of ser.ys) if (Number.isFinite(v)) yLmax = Math.max(yLmax, v);
+    }
+    for (const k of rightKeys){
+      const ser = app.series.get(k);
+      if (!ser) continue;
+      for (const v of ser.ys) if (Number.isFinite(v)) yRmax = Math.max(yRmax, v);
+    }
+    yLmax *= 1.06;
+    yRmax *= 1.06;
+
+    const rightTicks = buildTicks(yRmax);
+
+    if (controller) controller.destroy();
+
+    controller = makeChartController({
+      svg, wrap, tooltipEl, errorEl,
+      legendEl,
+      controls,
+      seriesList: seriesDefs.map(s => ({ key:s.key, label:s.label, color:s.color, axis:s.axis })),
+      getValueAtYear,
+      getSeriesForPath,
+      xDomain: app.xDomain,
+      yDomain: { left: { min: 0, max: yLmax } },
+      formatValue: (k,v)=>formatVal(k,v),
+      extraBackground,
+      rightAxis: { ticks: rightTicks, formatTick: (v)=>String(v) },
+      yLabelLeft: "Miles de millones de € (1986)",
+      yLabelRight: showPop ? "k€ por persona / M hab. (1986)" : "Miles de € por persona (1986)",
+      defaultOrderTooltip: seriesDefs.map(s=>s.key),
+      topN: 0
+    });
+
+    renderPresStats(controller);
+    window.__gb = { onShow: () => controller.onShow() };
+  }
+
+  // init buttons
   if (btnPolBands){
+    btnPolBands.classList.toggle("on", showPresBands);
+    btnPolBands.textContent = "Políticos: " + (showPresBands ? "ON" : "OFF");
     btnPolBands.addEventListener("click", () => {
       showPresBands = !showPresBands;
       btnPolBands.classList.toggle("on", showPresBands);
       btnPolBands.textContent = "Políticos: " + (showPresBands ? "ON" : "OFF");
-      controller.onShow();
+      if (controller) controller.onShow();
+    });
+  }
+  if (btnPop){
+    btnPop.classList.toggle("on", showPop);
+    btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
+    btnPop.addEventListener("click", () => {
+      showPop = !showPop;
+      btnPop.classList.toggle("on", showPop);
+      btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
+      rebuild();
     });
   }
 
-  window.__gb = { onShow: () => controller.onShow() };
+  try{
+    await loadGB();
+  } catch(e){
+    errorEl.style.display = "flex";
+    errorEl.textContent = e.message || String(e);
+    window.__gb = { onShow: ()=>{} };
+    return;
+  }
+
+  rebuild();
 })();
+
 
 /* ===================== Vista 3: Presión fiscal ===================== */
 (async function(){
