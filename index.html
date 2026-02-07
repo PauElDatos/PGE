@@ -1206,7 +1206,10 @@ function makeChartController(opts){
         "data-key": s.key,
         style: "pointer-events:none;"
       });
-      st
+
+      state.pathEls.set(s.key, path);
+      gLines.appendChild(path);
+    }
     // Highlight window (externo) - atenúa fuera del rango y remarca tramo/serie
     if (state.highlight && state.highlight.start !== null && state.highlight.end !== null){
       const hs = clamp(state.highlight.start, xDomain.min, xDomain.max);
@@ -1290,10 +1293,6 @@ function makeChartController(opts){
           }
         }
       }
-    }
-
-ate.pathEls.set(s.key, path);
-      gLines.appendChild(path);
     }
 
     // Overlay
