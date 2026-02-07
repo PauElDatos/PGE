@@ -384,14 +384,16 @@
 
     /* ===== Ajustes de layout para evitar “apelmazado” en Vistas 2 y 3 ===== */
     #viewGB .pc.chartPc,
-    #viewPA .pc.chartPc{
+    #viewPA .pc.chartPc,
+    #viewPGE .pc.chartPc{
       overflow-y: auto;
     }
     #viewGB .svgWrap,
-    #viewPA .svgWrap{
+    #viewPA .svgWrap,
+    #viewPGE .svgWrap{
       flex: 0 0 auto;
-      height: clamp(360px, 55vh, 640px);
-      min-height: 360px;
+      height: clamp(480px, 65vh, 860px);
+      min-height: 480px;
     }
     #viewGB .presStats{ flex: 0 0 auto; }
 
@@ -420,6 +422,54 @@
       font-size: calc(11px * var(--uiScale));
       color: rgba(255,255,255,.9);
     }
+
+    /* Población (tabla) - Vista GB */
+    .popBox{
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: rgba(255,255,255,.02);
+    }
+    .popTitle{
+      font-family: var(--fontTitle);
+      color: var(--primary);
+      font-size: calc(14px * var(--uiScale));
+      margin-bottom: 8px;
+    }
+    .popTableScroll{
+      max-height: 260px;
+      overflow: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    table.popTable{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: calc(12px * var(--uiScale));
+    }
+    table.popTable thead th{
+      position: sticky;
+      top: 0;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(4px);
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+      z-index: 1;
+    }
+    table.popTable tbody td{
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+      white-space: nowrap;
+    }
+    table.popTable tbody tr:hover td{
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.95);
+    }
+
 </style>
 </head>
 
@@ -504,7 +554,7 @@
         <div class="chartControls">
           <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
           <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-          <button class="btn" id="btnPopGB" title="Mostrar/ocultar población total (millones)">Población: OFF</button>
+          <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
         </div>
 
         <div class="footerSingle">
@@ -512,6 +562,17 @@
         </div>
 
         <div class="presStats" id="gbPresStats" aria-label="Resumen por presidencias"></div>
+        <div class="popBox" id="gbPopBox" style="display:none;">
+          <div class="popTitle">Población total (INE)</div>
+          <div class="popTableScroll">
+            <table class="popTable" aria-label="Tabla de población total por año">
+              <thead>
+                <tr><th>Año</th><th>Población total</th></tr>
+              </thead>
+              <tbody id="gbPopBody"></tbody>
+            </table>
+          </div>
+        </div>
         <div class="explainBox" id="gbExplain">
           <div class="explainTitle">Cómo leer estas series</div>
           <div class="explainText">
@@ -2022,6 +2083,8 @@ function makeChartController(opts){
     return;
   }
 
+  let controller = null;
+
   function rebuild(){
     const series = buildSeriesList();
     const yMax = computeYMax(series.map(s=>s.key));
@@ -2068,6 +2131,9 @@ function makeChartController(opts){
   const legendEl = document.getElementById("legendGB");
   const statsEl = document.getElementById("gbPresStats");
 
+  const popBox = document.getElementById("gbPopBox");
+  const popBody = document.getElementById("gbPopBody");
+
   const controls = {
     btnCrosshair: document.getElementById("btnCrosshairGB"),
   };
@@ -2076,6 +2142,39 @@ function makeChartController(opts){
   const btnPop = document.getElementById("btnPopGB");
   let showPresBands = true;
   let showPop = false;
+  let popTableData = [];
+
+  function fmtPop(v){
+    return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
+  }
+
+  function renderPopTable(){
+    if (!popBody) return;
+    popBody.innerHTML = "";
+    for (const r of popTableData){
+      const tr = document.createElement("tr");
+      const tdY = document.createElement("td");
+      tdY.textContent = String(r.year);
+      const tdP = document.createElement("td");
+      tdP.textContent = fmtPop(r.pop);
+      tr.appendChild(tdY);
+      tr.appendChild(tdP);
+      popBody.appendChild(tr);
+    }
+  }
+
+  function updatePopUI(){
+    if (btnPop){
+      btnPop.classList.toggle("on", showPop);
+      btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
+    }
+    if (popBox){
+      popBox.style.display = showPop ? "block" : "none";
+    }
+    if (showPop && popBody && popBody.childElementCount === 0){
+      renderPopTable();
+    }
+  }
 
   const BASE_SERIES = [
     { key:"pib_total",   label:"PIB total",                 color:"#00E5FF", axis:"left",  unit:"B€" },
@@ -2092,7 +2191,7 @@ function makeChartController(opts){
   };
 
   function getSeriesDefs(){
-    return showPop ? BASE_SERIES.concat([POP_SERIES]) : BASE_SERIES.slice();
+    return BASE_SERIES.slice();
   }
 
   function formatVal(key, v){
@@ -2157,6 +2256,12 @@ function makeChartController(opts){
       });
     }
     if (!rows.length) throw new Error("indicadores_estado_a_1986.csv no tiene filas válidas.");
+    // Población (para tabla inferior)
+    popTableData = rows
+      .filter(r => Number.isFinite(r.year) && Number.isFinite(r.pop))
+      .sort((a,b)=>a.year-b.year)
+      .map(r => ({ year: r.year, pop: r.pop }));
+
 
     const minY = rows.reduce((m,r)=>Math.min(m,r.year), Infinity);
     const maxY = rows.reduce((m,r)=>Math.max(m,r.year), -Infinity);
@@ -2384,7 +2489,7 @@ function makeChartController(opts){
       extraBackground,
       rightAxis: { ticks: rightTicks, formatTick: (v)=>String(v) },
       yLabelLeft: "Miles de millones de € (1986)",
-      yLabelRight: showPop ? "k€ por persona / M hab. (1986)" : "Miles de € por persona (1986)",
+      yLabelRight: "Miles de € por persona (1986)",
       defaultOrderTooltip: seriesDefs.map(s=>s.key),
       topN: 0
     });
@@ -2405,18 +2510,16 @@ function makeChartController(opts){
     });
   }
   if (btnPop){
-    btnPop.classList.toggle("on", showPop);
-    btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
+    updatePopUI();
     btnPop.addEventListener("click", () => {
       showPop = !showPop;
-      btnPop.classList.toggle("on", showPop);
-      btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
-      rebuild();
+      updatePopUI();
     });
   }
 
   try{
     await loadGB();
+    updatePopUI();
   } catch(e){
     errorEl.style.display = "flex";
     errorEl.textContent = e.message || String(e);
