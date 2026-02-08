@@ -550,7 +550,33 @@
     }
 
 
-  </style>
+  
+    /* ===== Explicaciones debajo de Series + Gráfico (GB/PA) ===== */
+    @media (min-width: 901px){
+      #viewGB,
+      #viewPA{
+        overflow: auto;
+        grid-template-rows: minmax(0, 1fr) auto;
+        align-content: start;
+      }
+      #viewGB .explainPanel,
+      #viewPA .explainPanel{
+        grid-column: 1 / -1;
+      }
+      #viewGB .explainPanel .pc,
+      #viewPA .explainPanel .pc{
+        overflow: visible;
+      }
+      #viewGB .explainPanel .explainBox,
+      #viewPA .explainPanel .explainBox{
+        margin-top: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+      }
+    }
+
+</style>
 </head>
 
 <body>
@@ -654,28 +680,39 @@
             </table>
           </div>
         </div>
-        <div class="explainBox" id="gbExplain">
-          <div class="explainTitle">Cómo leer estas series</div>
-          <div class="explainText">
-            <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
-            <div><b>Per cápita</b> significa “por persona”: se divide entre la <b>población total</b> del año.</div>
-            <div style="margin-top:8px;">
-              Reglas rápidas:
-              <ul>
-                <li>Si el <b>gasto total</b> crece igual que la <b>población</b> → <b>gasto per cápita</b> se mantiene plano.</li>
-                <li>Si la <b>población</b> crece más rápido que el <b>gasto</b> → <b>gasto per cápita</b> baja.</li>
-                <li>Si el <b>gasto</b> crece más rápido que la <b>población</b> → <b>gasto per cápita</b> sube.</li>
-              </ul>
-            </div>
-            <div style="margin-top:6px; opacity:.95;">
-              Tip: pasa el cursor por los porcentajes de cada mandato (PIB / PIB pc / Gto / Gto pc) para resaltar en el gráfico <b>solo ese tramo temporal</b>.
-            </div>
-          </div>
-        </div>
+        
 
       </div>
     </section>
-  </main>
+  
+
+    <section class="panel explainPanel">
+      <div class="ph">
+        <div class="ttl">Explicación</div>
+        <div class="sub"></div>
+      </div>
+      <div class="pc">
+        <div class="explainBox" id="gbExplain">
+                  <div class="explainTitle">Cómo leer estas series</div>
+                  <div class="explainText">
+                    <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
+                    <div><b>Per cápita</b> significa “por persona”: se divide entre la <b>población total</b> del año.</div>
+                    <div style="margin-top:8px;">
+                      Reglas rápidas:
+                      <ul>
+                        <li>Si el <b>gasto total</b> crece igual que la <b>población</b> → <b>gasto per cápita</b> se mantiene plano.</li>
+                        <li>Si la <b>población</b> crece más rápido que el <b>gasto</b> → <b>gasto per cápita</b> baja.</li>
+                        <li>Si el <b>gasto</b> crece más rápido que la <b>población</b> → <b>gasto per cápita</b> sube.</li>
+                      </ul>
+                    </div>
+                    <div style="margin-top:6px; opacity:.95;">
+                      Tip: pasa el cursor por los porcentajes de cada mandato (PIB / PIB pc / Gto / Gto pc) para resaltar en el gráfico <b>solo ese tramo temporal</b>.
+                    </div>
+                  </div>
+                </div>
+      </div>
+    </section>
+</main>
 
   <!-- ===================== VISTA 3: Presión fiscal ===================== -->
   <main id="viewPA" class="view">
@@ -709,31 +746,42 @@
         <div class="footerSingle">
           Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
         </div>
-        <div class="explainBox" id="paExplain">
-          <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
-          <div class="explainText">
-            <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
-            <div style="margin-top:8px;">
-              El cálculo es:
-              <div style="margin:6px 0 0 0;"><b>Presión (%)</b> = 100 × ( <b>Gasto público real (1986)</b> ÷ <b>PIB real (1986)</b> )</div>
-              <div style="opacity:.95; margin-top:6px;">
-                Equivalentemente (y da el mismo resultado): 100 × ( <b>Gasto per cápita real (1986)</b> ÷ <b>PIB per cápita real (1986)</b> ).
-              </div>
-            </div>
-            <div style="margin-top:8px;">
-              Pasos (resumen):
-              <ol style="margin:6px 0 0 18px;">
-                <li>Partir de PIB y gasto en euros corrientes.</li>
-                <li>Deflactar a euros reales de 1986 (columnas <code>pib_total_eur_a_1986</code> y <code>gasto_publico_eur_a_1986</code>).</li>
-                <li>Dividir para obtener el ratio gasto/PIB y multiplicar por 100.</li>
-              </ol>
-            </div>
-          </div>
-        </div>
+        
 
       </div>
     </section>
-  </main>
+  
+
+    <section class="panel explainPanel">
+      <div class="ph">
+        <div class="ttl">Explicación</div>
+        <div class="sub"></div>
+      </div>
+      <div class="pc">
+        <div class="explainBox" id="paExplain">
+                  <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
+                  <div class="explainText">
+                    <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
+                    <div style="margin-top:8px;">
+                      El cálculo es:
+                      <div style="margin:6px 0 0 0;"><b>Presión (%)</b> = 100 × ( <b>Gasto público real (1986)</b> ÷ <b>PIB real (1986)</b> )</div>
+                      <div style="opacity:.95; margin-top:6px;">
+                        Equivalentemente (y da el mismo resultado): 100 × ( <b>Gasto per cápita real (1986)</b> ÷ <b>PIB per cápita real (1986)</b> ).
+                      </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                      Pasos (resumen):
+                      <ol style="margin:6px 0 0 18px;">
+                        <li>Partir de PIB y gasto en euros corrientes.</li>
+                        <li>Deflactar a euros reales de 1986 (columnas <code>pib_total_eur_a_1986</code> y <code>gasto_publico_eur_a_1986</code>).</li>
+                        <li>Dividir para obtener el ratio gasto/PIB y multiplicar por 100.</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+      </div>
+    </section>
+</main>
 
 <script>
 /* ===================== Tabs ===================== */
