@@ -551,33 +551,53 @@
 
 
   
-    /* ===== Explicaciones debajo de Series + Gráfico (GB/PA) ===== */
-    @media (min-width: 901px){
-      #viewGB,
-      #viewPA{
-        overflow: auto;
-        grid-template-rows: 1fr;
-        grid-auto-rows: auto;
-        align-content: start;
+    /* ===== Vistas GB/PA: explicación debajo de Series + Gráfico (se ve con scroll) ===== */
+    #viewGB.view.active,
+    #viewPA.view.active{
+      display:flex !important;
+      flex-direction:column;
+      gap:12px;
+      overflow-y:auto;
+      overflow-x:hidden;
+    }
+    #viewGB .topGrid,
+    #viewPA .topGrid{
+      display:grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: 1fr;
+      gap:12px;
+      /* ocupa toda la altura visible para que la explicación quede fuera de pantalla */
+      height:100%;
+      min-height:100%;
+      flex: 0 0 auto;
+    }
+    #viewGB .topGrid > .panel,
+    #viewPA .topGrid > .panel{
+      height:100%;
+    }
+    /* sin scroll interno del panel de gráfico (el scroll es del main) */
+    #viewGB .pc.chartPc,
+    #viewPA .pc.chartPc{
+      overflow:hidden;
+    }
+    #viewGB .svgWrap,
+    #viewPA .svgWrap{
+      min-height:0;
+    }
+
+    @media (max-width: 900px){
+      #viewGB.view.active,
+      #viewPA.view.active{
+        overflow:visible;
       }
-      #viewGB .explainPanel,
-      #viewPA .explainPanel{
-        grid-column: 1 / -1;
-      }
-      #viewGB .explainPanel .pc,
-      #viewPA .explainPanel .pc{
-        overflow: visible;
-      }
-      #viewGB .explainPanel .explainBox,
-      #viewPA .explainPanel .explainBox{
-        margin-top: 0;
-        padding: 0;
-        border: none;
-        background: transparent;
+      #viewGB .topGrid,
+      #viewPA .topGrid{
+        grid-template-columns: 1fr;
+        min-height:0;
       }
     }
 
-</style>
+  </style>
 </head>
 
 <body>
@@ -635,154 +655,163 @@
 
   <!-- ===================== VISTA 2: Gasto vs beneficio ===================== -->
   <main id="viewGB" class="view">
-    <section class="panel">
-      <div class="ph">
-        <div class="ttl">Series</div>
-        <div class="sub">1986–2023</div>
-      </div>
-      <div class="pc">
-        <div class="legend" id="legendGB"></div>
-        <div class="presStats" id="gbPresStats" aria-label="Resumen por presidencias"></div>
-      </div>
-    </section>
+    <div class="topGrid">
+      <section class="panel">
+        <div class="ph">
+          <div class="ttl">Series</div>
+          <div class="sub">1986–2023</div>
+        </div>
+        <div class="pc">
+          <div class="legend" id="legendGB"></div>
+          <div class="presStats" id="gbPresStats" aria-label="Resumen por presidencias"></div>
+        </div>
+      </section>
 
-    <section class="panel">
-      <div class="ph">
-        <div class="ttl">Gráfico</div>
-        <div class="sub"></div>
-      </div>
-
-      <div class="pc chartPc">
-        <div class="svgWrap" id="svgWrapGB">
-          <svg id="chartSvgGB" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de PIB y gasto público en euros constantes 1986"></svg>
-          <div class="tooltip" id="tooltipGB" style="display:none;"></div>
-          <div class="errorBox" id="errorBoxGB" style="display:none;"></div>
+      <section class="panel">
+        <div class="ph">
+          <div class="ttl">Gráfico</div>
+          <div class="sub"></div>
         </div>
 
-        <div class="chartControls">
-          <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
-          <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-          <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
-</div>
-
-        <div class="footerSingle">
-          Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
-        </div>
-
-        
-        <div class="popBox" id="gbPopBox" style="display:none;">
-          <div class="popTitle">Población total (INE)</div>
-          <div class="popTableScroll">
-            <table class="popTable" aria-label="Tabla de población total por año">
-              <thead>
-                <tr><th>Año</th><th>Población total</th></tr>
-              </thead>
-              <tbody id="gbPopBody"></tbody>
-            </table>
+        <div class="pc chartPc">
+          <div class="svgWrap" id="svgWrapGB">
+            <svg id="chartSvgGB" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de PIB y gasto público en euros constantes 1986"></svg>
+            <div class="tooltip" id="tooltipGB" style="display:none;"></div>
+            <div class="errorBox" id="errorBoxGB" style="display:none;"></div>
           </div>
-        </div>
+
+          <div class="chartControls">
+            <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
+            <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
+            <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
+  </div>
+
         
 
-      </div>
-    </section>
-  
+        
+  <div class="footerSingle">
+            Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
+          </div>
 
-    <section class="panel explainPanel">
+        
+        
+        
+
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
       <div class="ph">
         <div class="ttl">Explicación</div>
         <div class="sub"></div>
       </div>
       <div class="pc">
-        <div class="explainBox" id="gbExplain">
-                  <div class="explainTitle">Cómo leer estas series</div>
-                  <div class="explainText">
-                    <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
-                    <div><b>Per cápita</b> significa “por persona”: se divide entre la <b>población total</b> del año.</div>
-                    <div style="margin-top:8px;">
-                      Reglas rápidas:
-                      <ul>
-                        <li>Si el <b>gasto total</b> crece igual que la <b>población</b> → <b>gasto per cápita</b> se mantiene plano.</li>
-                        <li>Si la <b>población</b> crece más rápido que el <b>gasto</b> → <b>gasto per cápita</b> baja.</li>
-                        <li>Si el <b>gasto</b> crece más rápido que la <b>población</b> → <b>gasto per cápita</b> sube.</li>
-                      </ul>
-                    </div>
-                    <div style="margin-top:6px; opacity:.95;">
-                      Tip: pasa el cursor por los porcentajes de cada mandato (PIB / PIB pc / Gto / Gto pc) para resaltar en el gráfico <b>solo ese tramo temporal</b>.
-                    </div>
+      <div class="popBox" id="gbPopBox" style="display:none;">
+                <div class="popTitle">Población total (INE)</div>
+                <div class="popTableScroll">
+                  <table class="popTable" aria-label="Tabla de población total por año">
+                    <thead>
+                      <tr><th>Año</th><th>Población total</th></tr>
+                    </thead>
+                    <tbody id="gbPopBody"></tbody>
+                  </table>
+                </div>
+              </div>
+      <div class="explainBox" id="gbExplain">
+                <div class="explainTitle">Cómo leer estas series</div>
+                <div class="explainText">
+                  <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
+                  <div><b>Per cápita</b> significa “por persona”: se divide entre la <b>población total</b> del año.</div>
+                  <div style="margin-top:8px;">
+                    Reglas rápidas:
+                    <ul>
+                      <li>Si el <b>gasto total</b> crece igual que la <b>población</b> → <b>gasto per cápita</b> se mantiene plano.</li>
+                      <li>Si la <b>población</b> crece más rápido que el <b>gasto</b> → <b>gasto per cápita</b> baja.</li>
+                      <li>Si el <b>gasto</b> crece más rápido que la <b>población</b> → <b>gasto per cápita</b> sube.</li>
+                    </ul>
+                  </div>
+                  <div style="margin-top:6px; opacity:.95;">
+                    Tip: pasa el cursor por los porcentajes de cada mandato (PIB / PIB pc / Gto / Gto pc) para resaltar en el gráfico <b>solo ese tramo temporal</b>.
                   </div>
                 </div>
+              </div>
       </div>
     </section>
-</main>
+  </main>
 
-  <!-- ===================== VISTA 3: Presión fiscal ===================== -->
+<!-- ===================== VISTA 3: Presión fiscal ===================== -->
   <main id="viewPA" class="view">
-    <section class="panel">
-      <div class="ph">
-        <div class="ttl">Serie</div>
-        <div class="sub">1986–2023</div>
-      </div>
-      <div class="pc">
-        <div class="legend" id="legendPA"></div>
-      </div>
-    </section>
+    <div class="topGrid">
+      <section class="panel">
+        <div class="ph">
+          <div class="ttl">Serie</div>
+          <div class="sub">1986–2023</div>
+        </div>
+        <div class="pc">
+          <div class="legend" id="legendPA"></div>
+        </div>
+      </section>
 
-    <section class="panel">
-      <div class="ph">
-        <div class="ttl">Gráfico</div>
-        <div class="sub"></div>
-      </div>
-
-      <div class="pc chartPc">
-        <div class="svgWrap" id="svgWrapPA">
-          <svg id="chartSvgPA" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de gasto público per cápita como porcentaje del PIB per cápita"></svg>
-          <div class="tooltip" id="tooltipPA" style="display:none;"></div>
-          <div class="errorBox" id="errorBoxPA" style="display:none;"></div>
+      <section class="panel">
+        <div class="ph">
+          <div class="ttl">Gráfico</div>
+          <div class="sub"></div>
         </div>
 
-        <div class="chartControls">
-          <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-</div>
+        <div class="pc chartPc">
+          <div class="svgWrap" id="svgWrapPA">
+            <svg id="chartSvgPA" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de gasto público per cápita como porcentaje del PIB per cápita"></svg>
+            <div class="tooltip" id="tooltipPA" style="display:none;"></div>
+            <div class="errorBox" id="errorBoxPA" style="display:none;"></div>
+          </div>
 
-        <div class="footerSingle">
-          Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
-        </div>
+          <div class="chartControls">
+            <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
+  </div>
+
         
 
-      </div>
-    </section>
-  
+        
+  <div class="footerSingle">
+            Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
+          </div>
+        
 
-    <section class="panel explainPanel">
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
       <div class="ph">
         <div class="ttl">Explicación</div>
         <div class="sub"></div>
       </div>
       <div class="pc">
-        <div class="explainBox" id="paExplain">
-                  <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
-                  <div class="explainText">
-                    <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
-                    <div style="margin-top:8px;">
-                      El cálculo es:
-                      <div style="margin:6px 0 0 0;"><b>Presión (%)</b> = 100 × ( <b>Gasto público real (1986)</b> ÷ <b>PIB real (1986)</b> )</div>
-                      <div style="opacity:.95; margin-top:6px;">
-                        Equivalentemente (y da el mismo resultado): 100 × ( <b>Gasto per cápita real (1986)</b> ÷ <b>PIB per cápita real (1986)</b> ).
-                      </div>
-                    </div>
-                    <div style="margin-top:8px;">
-                      Pasos (resumen):
-                      <ol style="margin:6px 0 0 18px;">
-                        <li>Partir de PIB y gasto en euros corrientes.</li>
-                        <li>Deflactar a euros reales de 1986 (columnas <code>pib_total_eur_a_1986</code> y <code>gasto_publico_eur_a_1986</code>).</li>
-                        <li>Dividir para obtener el ratio gasto/PIB y multiplicar por 100.</li>
-                      </ol>
+      <div class="explainBox" id="paExplain">
+                <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
+                <div class="explainText">
+                  <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
+                  <div style="margin-top:8px;">
+                    El cálculo es:
+                    <div style="margin:6px 0 0 0;"><b>Presión (%)</b> = 100 × ( <b>Gasto público real (1986)</b> ÷ <b>PIB real (1986)</b> )</div>
+                    <div style="opacity:.95; margin-top:6px;">
+                      Equivalentemente (y da el mismo resultado): 100 × ( <b>Gasto per cápita real (1986)</b> ÷ <b>PIB per cápita real (1986)</b> ).
                     </div>
                   </div>
+                  <div style="margin-top:8px;">
+                    Pasos (resumen):
+                    <ol style="margin:6px 0 0 18px;">
+                      <li>Partir de PIB y gasto en euros corrientes.</li>
+                      <li>Deflactar a euros reales de 1986 (columnas <code>pib_total_eur_a_1986</code> y <code>gasto_publico_eur_a_1986</code>).</li>
+                      <li>Dividir para obtener el ratio gasto/PIB y multiplicar por 100.</li>
+                    </ol>
+                  </div>
                 </div>
+              </div>
       </div>
     </section>
-</main>
+  </main>
 
 <script>
 /* ===================== Tabs ===================== */
@@ -803,9 +832,9 @@
       b.classList.toggle("on", on);
       b.setAttribute("aria-selected", on ? "true" : "false");
     }
-    // Volver arriba: la explicación queda debajo del “fold”
-    const v = views[k];
-    if (v) v.scrollTop = 0;
+    // Al cambiar de sección, empieza arriba (la explicación queda más abajo y se ve con scroll)
+    if (views[k]) views[k].scrollTop = 0;
+
 
     // Recalcular geometría de gráficos visibles
     if (k === "pge") window.__pge?.onShow?.();
@@ -1864,6 +1893,55 @@ function makeChartController(opts){
     });
   }
 
+
+  // Explicación desplegable
+  const btnExplain = document.getElementById("btnExplainPA");
+  const explainEl = document.getElementById("paExplain");
+  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
+  let showExplain = false;
+
+  function updateExplainUI(){
+    if (btnExplain){
+      btnExplain.classList.toggle("on", showExplain);
+      btnExplain.textContent = "Explicación";
+    }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
+    if (explainEl){
+      explainEl.classList.toggle("open", showExplain);
+    }
+    if (chartPcEl){
+      chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => {
+        if (chartPcEl){
+          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }
+
   // ---- lógica original (index funcional.html) ----
   const PENSIONS_LABEL = "Pensiones";
   const PENSIONS_PATTERNS = new Set(["pensiones"]);
@@ -2304,6 +2382,54 @@ function makeChartController(opts){
   let showPop = false;
   let popTableData = [];
 
+  // Explicación desplegable
+  const btnExplain = document.getElementById("btnExplainGB");
+  const explainEl = document.getElementById("gbExplain");
+  const chartPcEl = document.querySelector("#viewGB .pc.chartPc");
+  let showExplain = false;
+
+  function updateExplainUI(){
+    if (btnExplain){
+      btnExplain.classList.toggle("on", showExplain);
+      btnExplain.textContent = "Explicación";
+    }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
+    if (explainEl){
+      explainEl.classList.toggle("open", showExplain);
+    }
+    if (chartPcEl){
+      chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => {
+        if (chartPcEl){
+          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }
+
   function fmtPop(v){
     return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
   }
@@ -2684,6 +2810,16 @@ function makeChartController(opts){
     });
   }
 
+  if (btnExplain){
+    updateExplainUI();
+    btnExplain.addEventListener("click", () => {
+      showExplain = !showExplain;
+      updateExplainUI();
+    });
+  } else {
+    updateExplainUI();
+  }
+
   try{
     await loadGB();
     updatePopUI();
@@ -2835,6 +2971,17 @@ function makeChartController(opts){
       controller.onShow();
     });
   }
+
+  if (btnExplain){
+    updateExplainUI();
+    btnExplain.addEventListener("click", () => {
+      showExplain = !showExplain;
+      updateExplainUI();
+    });
+  } else {
+    updateExplainUI();
+  }
+
 
   window.__pa = { onShow: () => controller.onShow() };
 })();
