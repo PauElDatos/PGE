@@ -556,7 +556,8 @@
       #viewGB,
       #viewPA{
         overflow: auto;
-        grid-template-rows: minmax(0, 1fr) auto;
+        grid-template-rows: 1fr;
+        grid-auto-rows: auto;
         align-content: start;
       }
       #viewGB .explainPanel,
@@ -802,6 +803,10 @@
       b.classList.toggle("on", on);
       b.setAttribute("aria-selected", on ? "true" : "false");
     }
+    // Volver arriba: la explicación queda debajo del “fold”
+    const v = views[k];
+    if (v) v.scrollTop = 0;
+
     // Recalcular geometría de gráficos visibles
     if (k === "pge") window.__pge?.onShow?.();
     if (k === "gb")  window.__gb?.onShow?.();
