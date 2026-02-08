@@ -639,8 +639,22 @@
                   <button class="btn" id="btnExplainGB" title="Mostrar/ocultar explicación">Explicación</button>
 </div>
 
-        
+        <div class="footerSingle">
+          Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
+        </div>
 
+        
+        <div class="popBox" id="gbPopBox" style="display:none;">
+          <div class="popTitle">Población total (INE)</div>
+          <div class="popTableScroll">
+            <table class="popTable" aria-label="Tabla de población total por año">
+              <thead>
+                <tr><th>Año</th><th>Población total</th></tr>
+              </thead>
+              <tbody id="gbPopBody"></tbody>
+            </table>
+          </div>
+        </div>
         <div class="explainBox explainCollapsible" id="gbExplain">
           <div class="explainTitle">Cómo leer estas series</div>
           <div class="explainText">
@@ -659,23 +673,6 @@
             </div>
           </div>
         </div>
-<div class="footerSingle">
-          Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
-        </div>
-
-        
-        <div class="popBox" id="gbPopBox" style="display:none;">
-          <div class="popTitle">Población total (INE)</div>
-          <div class="popTableScroll">
-            <table class="popTable" aria-label="Tabla de población total por año">
-              <thead>
-                <tr><th>Año</th><th>Población total</th></tr>
-              </thead>
-              <tbody id="gbPopBody"></tbody>
-            </table>
-          </div>
-        </div>
-        
 
       </div>
     </section>
@@ -711,8 +708,9 @@
                   <button class="btn" id="btnExplainPA" title="Mostrar/ocultar explicación">Explicación</button>
 </div>
 
-        
-
+        <div class="footerSingle">
+          Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
+        </div>
         <div class="explainBox explainCollapsible" id="paExplain">
           <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
           <div class="explainText">
@@ -734,10 +732,6 @@
             </div>
           </div>
         </div>
-<div class="footerSingle">
-          Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
-        </div>
-        
 
       </div>
     </section>
@@ -1831,40 +1825,14 @@ function makeChartController(opts){
       btnExplain.classList.toggle("on", showExplain);
       btnExplain.textContent = "Explicación";
     }
-
-    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
-    if (wrap){
-      if (showExplain){
-        if (!wrap.dataset.lockH){
-          const h = Math.round(wrap.getBoundingClientRect().height);
-          wrap.dataset.lockH = String(h);
-        }
-        wrap.style.flex = "0 0 auto";
-        wrap.style.height = wrap.dataset.lockH + "px";
-      } else {
-        if (wrap.dataset.lockH){
-          delete wrap.dataset.lockH;
-          wrap.style.flex = "";
-          wrap.style.height = "";
-        }
-      }
-    }
-
     if (explainEl){
       explainEl.classList.toggle("open", showExplain);
     }
     if (chartPcEl){
       chartPcEl.classList.toggle("expOpen", showExplain);
     }
-
     if (showExplain && explainEl){
-      requestAnimationFrame(() => {
-        if (chartPcEl){
-          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
-        } else {
-          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
+      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
     }
   }
 
@@ -2319,40 +2287,14 @@ function makeChartController(opts){
       btnExplain.classList.toggle("on", showExplain);
       btnExplain.textContent = "Explicación";
     }
-
-    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
-    if (wrap){
-      if (showExplain){
-        if (!wrap.dataset.lockH){
-          const h = Math.round(wrap.getBoundingClientRect().height);
-          wrap.dataset.lockH = String(h);
-        }
-        wrap.style.flex = "0 0 auto";
-        wrap.style.height = wrap.dataset.lockH + "px";
-      } else {
-        if (wrap.dataset.lockH){
-          delete wrap.dataset.lockH;
-          wrap.style.flex = "";
-          wrap.style.height = "";
-        }
-      }
-    }
-
     if (explainEl){
       explainEl.classList.toggle("open", showExplain);
     }
     if (chartPcEl){
       chartPcEl.classList.toggle("expOpen", showExplain);
     }
-
     if (showExplain && explainEl){
-      requestAnimationFrame(() => {
-        if (chartPcEl){
-          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
-        } else {
-          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
+      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
     }
   }
 
