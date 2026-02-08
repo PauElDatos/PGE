@@ -636,7 +636,6 @@
           <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
           <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
           <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
-                  <button class="btn" id="btnExplainGB" title="Mostrar/ocultar explicación">Explicación</button>
 </div>
 
         <div class="footerSingle">
@@ -655,7 +654,7 @@
             </table>
           </div>
         </div>
-        <div class="explainBox explainCollapsible" id="gbExplain">
+        <div class="explainBox" id="gbExplain">
           <div class="explainTitle">Cómo leer estas series</div>
           <div class="explainText">
             <div><b>PIB total</b> y <b>Gasto público total</b> están en euros reales de 1986 (miles de millones).</div>
@@ -705,13 +704,12 @@
 
         <div class="chartControls">
           <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-                  <button class="btn" id="btnExplainPA" title="Mostrar/ocultar explicación">Explicación</button>
 </div>
 
         <div class="footerSingle">
           Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
         </div>
-        <div class="explainBox explainCollapsible" id="paExplain">
+        <div class="explainBox" id="paExplain">
           <div class="explainTitle">Cómo se calcula la “presión fiscal” aquí</div>
           <div class="explainText">
             <div>El CSV <code>indicadores_estado_a_1986.csv</code> ya trae la serie en porcentaje (<code>gasto_publico_per_capita_pct_1986</code>), que coincide con <code>presion_gasto_real_1986_pct</code>.</div>
@@ -1813,29 +1811,6 @@ function makeChartController(opts){
     });
   }
 
-
-  // Explicación desplegable
-  const btnExplain = document.getElementById("btnExplainPA");
-  const explainEl = document.getElementById("paExplain");
-  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
-  let showExplain = false;
-
-  function updateExplainUI(){
-    if (btnExplain){
-      btnExplain.classList.toggle("on", showExplain);
-      btnExplain.textContent = "Explicación";
-    }
-    if (explainEl){
-      explainEl.classList.toggle("open", showExplain);
-    }
-    if (chartPcEl){
-      chartPcEl.classList.toggle("expOpen", showExplain);
-    }
-    if (showExplain && explainEl){
-      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
-    }
-  }
-
   // ---- lógica original (index funcional.html) ----
   const PENSIONS_LABEL = "Pensiones";
   const PENSIONS_PATTERNS = new Set(["pensiones"]);
@@ -2276,28 +2251,6 @@ function makeChartController(opts){
   let showPop = false;
   let popTableData = [];
 
-  // Explicación desplegable
-  const btnExplain = document.getElementById("btnExplainGB");
-  const explainEl = document.getElementById("gbExplain");
-  const chartPcEl = document.querySelector("#viewGB .pc.chartPc");
-  let showExplain = false;
-
-  function updateExplainUI(){
-    if (btnExplain){
-      btnExplain.classList.toggle("on", showExplain);
-      btnExplain.textContent = "Explicación";
-    }
-    if (explainEl){
-      explainEl.classList.toggle("open", showExplain);
-    }
-    if (chartPcEl){
-      chartPcEl.classList.toggle("expOpen", showExplain);
-    }
-    if (showExplain && explainEl){
-      requestAnimationFrame(() => explainEl.scrollIntoView({ behavior: "smooth", block: "start" }));
-    }
-  }
-
   function fmtPop(v){
     return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
   }
@@ -2678,16 +2631,6 @@ function makeChartController(opts){
     });
   }
 
-  if (btnExplain){
-    updateExplainUI();
-    btnExplain.addEventListener("click", () => {
-      showExplain = !showExplain;
-      updateExplainUI();
-    });
-  } else {
-    updateExplainUI();
-  }
-
   try{
     await loadGB();
     updatePopUI();
@@ -2839,17 +2782,6 @@ function makeChartController(opts){
       controller.onShow();
     });
   }
-
-  if (btnExplain){
-    updateExplainUI();
-    btnExplain.addEventListener("click", () => {
-      showExplain = !showExplain;
-      updateExplainUI();
-    });
-  } else {
-    updateExplainUI();
-  }
-
 
   window.__pa = { onShow: () => controller.onShow() };
 })();
