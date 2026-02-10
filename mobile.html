@@ -3,7 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>entendiendo la economía de España</title>
+  
+  <script>
+  // Si se abre en pantalla grande, vuelve a la versión escritorio (se puede forzar móvil con ?mobile=1)
+  (function(){
+    try{
+      const params = new URLSearchParams(location.search);
+      if (params.get("mobile") === "1") return;
+
+      const isCoarse = (window.matchMedia && window.matchMedia("(pointer:coarse)").matches) || false;
+      const bigScreen = Math.max(screen.width || 0, screen.height || 0) >= 1024;
+
+      if (!isCoarse && bigScreen){
+        const target = "index.html" + location.search + location.hash;
+        location.replace(target);
+      }
+    }catch(e){}
+  })();
+  </script>
+<title>entendiendo la economía de España</title>
 
   <style>
 
@@ -283,6 +301,22 @@
       font-size: calc(12px * var(--uiScale));
       opacity:.85;
       padding-bottom: 2px;
+
+      display:flex;
+      flex-direction:column;     /* <-- clave: apila en vertical */
+      align-items:flex-start;    /* <-- clave: todo a la izquierda */
+      justify-content:flex-start;
+      gap:4px;                   /* separación entre Fuente y Presidentes */
+    }
+
+    .footerPres{
+      margin-left:0;             /* <-- quita el empuje a la derecha */
+      text-align:left;           /* <-- izquierda */
+      white-space:normal;        /* <-- permite salto de línea si hace falta */
+      opacity:.85;
+    }
+    @media (max-width: 900px){
+      .footerPres{ white-space:normal; }
     }
 
     .errorBox{
@@ -605,6 +639,120 @@
       }
     }
 
+  
+    /* ===================== MODO MÓVIL (mobile.html) ===================== */
+    :root{ --uiScale: 1.12; }
+
+    body{
+      overflow:auto;
+      height:auto;
+      min-height:100vh;
+    }
+
+    header{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 14px 14px 10px 14px;
+      background: rgba(37,37,37,.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--stroke);
+    }
+
+    .h-title h1{
+      font-size: calc(18px * var(--uiScale));
+      letter-spacing: .2px;
+    }
+
+    .mHint{
+      margin-top: 8px;
+      font-size: calc(12px * var(--uiScale));
+      line-height: 1.25;
+      opacity: .85;
+    }
+    .mHint a{
+      color: var(--primary);
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(254,247,2,.55);
+    }
+
+    /* Tabs como barra inferior */
+    .tabs{
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 60;
+      margin: 0;
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(37,37,37,.92);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--stroke);
+      gap: 8px;
+    }
+    .tabs .btn.tab{
+      flex: 1 1 0;
+      justify-content: center;
+      padding: 12px 10px;
+      font-size: calc(12px * var(--uiScale));
+    }
+
+    /* Vistas a una columna (y con espacio para la barra inferior) */
+    main{
+      display:block;
+      grid-template-columns: none !important;
+      padding: 12px 12px calc(92px + env(safe-area-inset-bottom)) 12px;
+      overflow: visible;
+    }
+    .view.active{ display:block !important; }
+
+    .panel{ margin-bottom: 12px; }
+
+    .pc{ overflow: visible; }
+
+    /* PGE: muestra primero el gráfico y luego las políticas */
+    #viewPGE.view.active{
+      display:flex !important;
+      flex-direction: column-reverse;
+      gap: 12px;
+    }
+    #viewPGE.view.active > section.panel{ margin-bottom: 0; }
+
+    /* GB/PA: dentro del topGrid, primero el gráfico y después series */
+    #viewGB .topGrid,
+    #viewPA .topGrid{
+      display:flex !important;
+      flex-direction: column-reverse;
+      gap: 12px;
+      height:auto;
+      min-height:0;
+    }
+    #viewGB .topGrid > .panel,
+    #viewPA .topGrid > .panel{
+      height:auto;
+    }
+
+    /* Área del gráfico más "tocable" */
+    .svgWrap{
+      height: 58vh;
+      min-height: 420px;
+      touch-action: none; /* permite arrastrar para ver tooltip sin scroll */
+    }
+    .tooltip{
+      min-width: 220px;
+      max-width: 92vw;
+    }
+
+    /* Items de leyenda más cómodos para dedo */
+    .item{
+      padding: 12px 12px;
+      gap: 12px;
+    }
+    .nm{ font-size: calc(13px * var(--uiScale)); }
+
+    /* Footer: evita que choque con la barra inferior */
+    .footerSingle{
+      padding-bottom: 4px;
+    }
+
   </style>
 </head>
 
@@ -615,8 +763,10 @@
       <div class="tabs" role="tablist" aria-label="Secciones">
         <button class="btn tab on" data-view="pge" role="tab" aria-selected="true">Presupuestos generales del Estado</button>
         <button class="btn tab" data-view="gb" role="tab" aria-selected="false">Gasto vs beneficio</button>
-        <button class="btn tab" data-view="pa" role="tab" aria-selected="false">Presión fiscal</button>
+        <button class="btn tab" data-view="pa" role="tab" aria-selected="false">Presión fiscal</button>      
+
       </div>
+      <div class="mHint">Modo móvil · <a href="index.html?desktop=1">Abrir versión escritorio</a></div>
     </div>
   </header>
 
@@ -655,7 +805,8 @@
         </div>
 
         <div class="footerSingle">
-          Fuente: <span style="color:#fff">BOE</span> · <span style="opacity:.9;">N.Geolitics</span>
+          <span class="footerSource">Fuente: <span style="color:#fff">BOE</span> · <span style="opacity:.9;">N.Geolitics</span></span>
+          <span class="footerPres">Felipe González (1986–1996) · José María Aznar (1996–2004) · José Luis Rodríguez Zapatero (2004–2011) · Mariano Rajoy (2011–2018) · Pedro Sánchez (2018–2023)</span>
         </div>
       </div>
     </section>
@@ -698,8 +849,9 @@
 
         
   <div class="footerSingle">
-            Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
-          </div>
+          <span class="footerSource">Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span></span>
+          <span class="footerPres">Felipe González (1986–1996) · José María Aznar (1996–2004) · José Luis Rodríguez Zapatero (2004–2011) · Mariano Rajoy (2011–2018) · Pedro Sánchez (2018–2023)</span>
+        </div>
 
         
         
@@ -782,8 +934,9 @@
 
         
   <div class="footerSingle">
-            Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
-          </div>
+          <span class="footerSource">Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span></span>
+          <span class="footerPres">Felipe González (1986–1996) · José María Aznar (1996–2004) · José Luis Rodríguez Zapatero (2004–2011) · Mariano Rajoy (2011–2018) · Pedro Sánchez (2018–2023)</span>
+        </div>
         
 
         </div>
@@ -1142,7 +1295,7 @@ function makeChartController(opts){
     focusSet: null,
     hoverKey: null,
     hoverFocusMode: false,
-    crosshairMode: false,
+    crosshairMode: ((window.matchMedia && window.matchMedia("(pointer:coarse)").matches) ? true : false),
     scaleMode: "exp",
     highlight: null, // {start,end,keys:Array<string>}
     pathEls: new Map(),
@@ -1779,8 +1932,18 @@ function makeChartController(opts){
       applyFocusStyles(true);
     }
 
+    // Mouse + táctil (Pointer Events). Mantiene compatibilidad con navegadores antiguos.
+    hit.addEventListener("pointermove", onMove);
+    hit.addEventListener("pointerleave", onLeave);
+    hit.addEventListener("pointercancel", onLeave);
+    hit.addEventListener("pointerdown", (ev) => {
+      try{ hit.setPointerCapture(ev.pointerId); }catch(e){}
+      onMove(ev);
+    });
+
     hit.addEventListener("mousemove", onMove);
     hit.addEventListener("mouseleave", onLeave);
+
     hit.addEventListener("click", (ev) => {
       if (state.hoverKey){
         toggleFocusKey(state.hoverKey, ev.shiftKey);
@@ -1799,6 +1962,10 @@ function makeChartController(opts){
       });
     }
     if (controls && controls.btnCrosshair){
+      // En pantallas táctiles (pointer:coarse) activamos la línea vertical por defecto
+      controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
+      controls.btnCrosshair.classList.toggle("on", state.crosshairMode);
+
       bind(controls.btnCrosshair, "click", () => {
         state.crosshairMode = !state.crosshairMode;
         controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
@@ -1901,54 +2068,6 @@ function makeChartController(opts){
     });
   }
 
-
-  // Explicación desplegable
-  const btnExplain = document.getElementById("btnExplainPA");
-  const explainEl = document.getElementById("paExplain");
-  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
-  let showExplain = false;
-
-  function updateExplainUI(){
-    if (btnExplain){
-      btnExplain.classList.toggle("on", showExplain);
-      btnExplain.textContent = "Explicación";
-    }
-
-    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
-    if (wrap){
-      if (showExplain){
-        if (!wrap.dataset.lockH){
-          const h = Math.round(wrap.getBoundingClientRect().height);
-          wrap.dataset.lockH = String(h);
-        }
-        wrap.style.flex = "0 0 auto";
-        wrap.style.height = wrap.dataset.lockH + "px";
-      } else {
-        if (wrap.dataset.lockH){
-          delete wrap.dataset.lockH;
-          wrap.style.flex = "";
-          wrap.style.height = "";
-        }
-      }
-    }
-
-    if (explainEl){
-      explainEl.classList.toggle("open", showExplain);
-    }
-    if (chartPcEl){
-      chartPcEl.classList.toggle("expOpen", showExplain);
-    }
-
-    if (showExplain && explainEl){
-      requestAnimationFrame(() => {
-        if (chartPcEl){
-          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
-        } else {
-          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
-    }
-  }
 
   // ---- lógica original (index funcional.html) ----
   const PENSIONS_LABEL = "Pensiones";
@@ -2856,6 +2975,30 @@ function makeChartController(opts){
   if (btnPolBands){
     btnPolBands.classList.toggle("on", showPresBands);
     btnPolBands.textContent = "Políticos: " + (showPresBands ? "ON" : "OFF");
+  }
+
+
+
+  // Explicación (si hay botón de toggle)
+  const btnExplain = document.getElementById("btnExplainPA");
+  const explainEl = document.getElementById("paExplain");
+  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
+  let showExplain = false;
+
+  function updateExplainUI(){
+    // En este index, la explicación está en un panel aparte y NO es colapsable por defecto.
+    // Aun así, si existe un botón "Explicación", permitimos alternar una clase.
+    if (btnExplain){
+      btnExplain.classList.toggle("on", showExplain);
+      btnExplain.textContent = "Explicación";
+    }
+    if (explainEl){
+      explainEl.classList.toggle("open", showExplain);
+      // si fuera colapsable, la clase "open" lo mostraría
+    }
+    if (chartPcEl){
+      chartPcEl.classList.toggle("expOpen", showExplain);
+    }
   }
 
   function drawPresBands(gBg, xScale, plotRect){

@@ -283,6 +283,22 @@
       font-size: calc(12px * var(--uiScale));
       opacity:.85;
       padding-bottom: 2px;
+
+      display:flex;
+      flex-direction:column;     /* <-- clave: apila en vertical */
+      align-items:flex-start;    /* <-- clave: todo a la izquierda */
+      justify-content:flex-start;
+      gap:4px;                   /* separación entre Fuente y Presidentes */
+    }
+
+    .footerPres{
+      margin-left:0;             /* <-- quita el empuje a la derecha */
+      text-align:left;           /* <-- izquierda */
+      white-space:normal;        /* <-- permite salto de línea si hace falta */
+      opacity:.85;
+    }
+    @media (max-width: 900px){
+      .footerPres{ white-space:normal; }
     }
 
     .errorBox{
@@ -655,7 +671,8 @@
         </div>
 
         <div class="footerSingle">
-          Fuente: <span style="color:#fff">BOE</span> · <span style="opacity:.9;">N.Geolitics</span>
+          <span class="footerSource">Fuente: <span style="color:#fff">BOE</span> · <span style="opacity:.9;">N.Geolitics</span></span>
+          <span class="footerPres">Felipe González (1986–1996) · José María Aznar (1996–2004) · José Luis Rodríguez Zapatero (2004–2011) · Mariano Rajoy (2011–2018) · Pedro Sánchez (2018–2023)</span>
         </div>
       </div>
     </section>
@@ -698,8 +715,9 @@
 
         
   <div class="footerSingle">
-            Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span>
-          </div>
+          <span class="footerSource">Fuente: <span style="color:#fff">BM</span> (PIB/IPC), <span style="color:#fff">INE</span> (población), <span style="color:#fff">PGE</span> (gasto). Precios de 1986. · <span style="opacity:.9;">N.Geolitics</span></span>
+          <span class="footerPres">Felipe González (1986–1996) · José María Aznar (1996–2004) · José Luis Rodríguez Zapatero (2004–2011) · Mariano Rajoy (2011–2018) · Pedro Sánchez (2018–2023)</span>
+        </div>
 
         
         
@@ -782,8 +800,9 @@
 
         
   <div class="footerSingle">
-            Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span>
-          </div>
+          <span class="footerSource">Fuente: <span style="color:#fff">Banco Mundial</span>, <span style="color:#fff">INE</span>, <span style="color:#fff">BOE</span>, <span style="color:#fff">FRED</span>. · <span style="opacity:.9;">N.Geolitics</span></span>
+          <span class="footerPres">Felipe González (1986–1996) · José María Aznar (1996–2004) · José Luis Rodríguez Zapatero (2004–2011) · Mariano Rajoy (2011–2018) · Pedro Sánchez (2018–2023)</span>
+        </div>
         
 
         </div>

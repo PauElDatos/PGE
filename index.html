@@ -3,7 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>entendiendo la economía de España</title>
+  
+  <script>
+  // Redirección automática a la versión móvil (se puede forzar escritorio con ?desktop=1)
+  (function(){
+    try{
+      const params = new URLSearchParams(location.search);
+      if (params.get("desktop") === "1") return;
+
+      const ua = navigator.userAgent || "";
+      const isUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const isCoarse = (window.matchMedia && window.matchMedia("(pointer:coarse)").matches) || false;
+      const smallScreen = Math.min(screen.width || 9999, screen.height || 9999) <= 900;
+
+      const isMobile = isUA || (isCoarse && smallScreen);
+      const onMobilePage = /mobile\.html$/i.test(location.pathname);
+
+      if (isMobile && !onMobilePage){
+        const target = "mobile.html" + location.search + location.hash;
+        location.replace(target);
+      }
+    }catch(e){}
+  })();
+  </script>
+<title>entendiendo la economía de España</title>
 
   <style>
 
@@ -1161,7 +1184,7 @@ function makeChartController(opts){
     focusSet: null,
     hoverKey: null,
     hoverFocusMode: false,
-    crosshairMode: false,
+    crosshairMode: ((window.matchMedia && window.matchMedia("(pointer:coarse)").matches) ? true : false),
     scaleMode: "exp",
     highlight: null, // {start,end,keys:Array<string>}
     pathEls: new Map(),
@@ -1798,8 +1821,18 @@ function makeChartController(opts){
       applyFocusStyles(true);
     }
 
+    // Mouse + táctil (Pointer Events). Mantiene compatibilidad con navegadores antiguos.
+    hit.addEventListener("pointermove", onMove);
+    hit.addEventListener("pointerleave", onLeave);
+    hit.addEventListener("pointercancel", onLeave);
+    hit.addEventListener("pointerdown", (ev) => {
+      try{ hit.setPointerCapture(ev.pointerId); }catch(e){}
+      onMove(ev);
+    });
+
     hit.addEventListener("mousemove", onMove);
     hit.addEventListener("mouseleave", onLeave);
+
     hit.addEventListener("click", (ev) => {
       if (state.hoverKey){
         toggleFocusKey(state.hoverKey, ev.shiftKey);
@@ -1818,6 +1851,10 @@ function makeChartController(opts){
       });
     }
     if (controls && controls.btnCrosshair){
+      // En pantallas táctiles (pointer:coarse) activamos la línea vertical por defecto
+      controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
+      controls.btnCrosshair.classList.toggle("on", state.crosshairMode);
+
       bind(controls.btnCrosshair, "click", () => {
         state.crosshairMode = !state.crosshairMode;
         controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
