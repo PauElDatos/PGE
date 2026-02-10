@@ -560,6 +560,14 @@
       overflow-y:auto;
       overflow-x:hidden;
     }
+
+    /* FIX: en layout flex, el panel de "Explicación" se estaba encogiendo a 0px
+       porque .topGrid ocupa height:100% y el segundo item (section.panel) tenía flex-shrink:1.
+       Forzamos a que NO se encoja, para que quede debajo y se pueda ver haciendo scroll. */
+    #viewGB.view.active > section.panel,
+    #viewPA.view.active > section.panel{
+      flex: 0 0 auto;
+    }
     #viewGB .topGrid,
     #viewPA .topGrid{
       display:grid;
