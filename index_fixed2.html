@@ -1286,8 +1286,17 @@ function makeChartController(opts){
   function draw(){
     hideError();
     const rect = wrap.getBoundingClientRect();
-    const w = Math.max(320, Math.floor(rect.width));
-    const h = Math.max(320, Math.floor(rect.height));
+    const rw = Math.floor(rect.width);
+    const rh = Math.floor(rect.height);
+
+    // Si la vista aún está oculta/no maquetada, el rect puede ser 0×0.
+    // Evitamos fijar un viewBox “falso” (p.ej. 320×320) que luego se estira y agranda textos.
+    if (rw < 50 || rh < 50){
+      return;
+    }
+
+    const w = Math.max(320, rw);
+    const h = Math.max(320, rh);
 
     svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
     svg.setAttribute("preserveAspectRatio", "none");
@@ -1851,7 +1860,9 @@ function makeChartController(opts){
   }
 
   return {
-    onShow: () => draw(),
+    // Dibujar en el siguiente frame asegura que el layout (display:flex/grid) ya se haya aplicado
+    // y que getBoundingClientRect() devuelva el tamaño real.
+    onShow: () => requestAnimationFrame(draw),
     setHighlight,
     clearHighlight,
     destroy,
@@ -1901,6 +1912,54 @@ function makeChartController(opts){
     });
   }
 
+
+  // Explicación desplegable
+  const btnExplain = document.getElementById("btnExplainPA");
+  const explainEl = document.getElementById("paExplain");
+  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
+  let showExplain = false;
+
+  function updateExplainUI(){
+    if (btnExplain){
+      btnExplain.classList.toggle("on", showExplain);
+      btnExplain.textContent = "Explicación";
+    }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
+    if (explainEl){
+      explainEl.classList.toggle("open", showExplain);
+    }
+    if (chartPcEl){
+      chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => {
+        if (chartPcEl){
+          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }
 
   // ---- lógica original (index funcional.html) ----
   const PENSIONS_LABEL = "Pensiones";
@@ -2808,30 +2867,6 @@ function makeChartController(opts){
   if (btnPolBands){
     btnPolBands.classList.toggle("on", showPresBands);
     btnPolBands.textContent = "Políticos: " + (showPresBands ? "ON" : "OFF");
-  }
-
-
-
-  // Explicación (si hay botón de toggle)
-  const btnExplain = document.getElementById("btnExplainPA");
-  const explainEl = document.getElementById("paExplain");
-  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
-  let showExplain = false;
-
-  function updateExplainUI(){
-    // En este index, la explicación está en un panel aparte y NO es colapsable por defecto.
-    // Aun así, si existe un botón "Explicación", permitimos alternar una clase.
-    if (btnExplain){
-      btnExplain.classList.toggle("on", showExplain);
-      btnExplain.textContent = "Explicación";
-    }
-    if (explainEl){
-      explainEl.classList.toggle("open", showExplain);
-      // si fuera colapsable, la clase "open" lo mostraría
-    }
-    if (chartPcEl){
-      chartPcEl.classList.toggle("expOpen", showExplain);
-    }
   }
 
   function drawPresBands(gBg, xScale, plotRect){
