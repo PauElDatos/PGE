@@ -283,17 +283,18 @@
       font-size: calc(12px * var(--uiScale));
       opacity:.85;
       padding-bottom: 2px;
+
       display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
+      flex-direction:column;     /* <-- clave: apila en vertical */
+      align-items:flex-start;    /* <-- clave: todo a la izquierda */
+      justify-content:flex-start;
+      gap:4px;                   /* separación entre Fuente y Presidentes */
     }
 
     .footerPres{
-      margin-left:auto;
-      text-align:right;
-      white-space:nowrap;
+      margin-left:0;             /* <-- quita el empuje a la derecha */
+      text-align:left;           /* <-- izquierda */
+      white-space:normal;        /* <-- permite salto de línea si hace falta */
       opacity:.85;
     }
     @media (max-width: 900px){
