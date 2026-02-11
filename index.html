@@ -2409,57 +2409,36 @@ function makeChartController(opts){
   let showPop = false;
   let popTableData = [];
 
-  // Explicación desplegable
+  // Explicación (botón de pulso: hace scroll; no mantiene estado ON/OFF)
   const btnExplain = document.getElementById("btnExplainGB");
   const explainEl = document.getElementById("gbExplain");
-  const chartPcEl = document.querySelector("#viewGB .pc.chartPc");
-  let showExplain = false;
 
-  function updateExplainUI(){
-    if (btnExplain){
-      btnExplain.classList.toggle("on", showExplain);
-      btnExplain.textContent = "Explicación";
+  function pulseExplainGB(){
+    if (!explainEl) return;
+
+    // Si algún día la explicación se marca como colapsable, la abrimos aquí.
+    if (explainEl.classList.contains("explainCollapsible")){
+      explainEl.classList.add("open");
     }
 
-    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
-    if (wrap){
-      if (showExplain){
-        if (!wrap.dataset.lockH){
-          const h = Math.round(wrap.getBoundingClientRect().height);
-          wrap.dataset.lockH = String(h);
-        }
-        wrap.style.flex = "0 0 auto";
-        wrap.style.height = wrap.dataset.lockH + "px";
+    requestAnimationFrame(() => {
+      const scroller = document.getElementById("viewGB") || explainEl.closest(".view");
+      if (scroller && typeof scroller.scrollTo === "function"){
+        const sr = scroller.getBoundingClientRect();
+        const tr = explainEl.getBoundingClientRect();
+        const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       } else {
-        if (wrap.dataset.lockH){
-          delete wrap.dataset.lockH;
-          wrap.style.flex = "";
-          wrap.style.height = "";
-        }
+        explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }
+    });
+  }
 
-    if (explainEl){
-      explainEl.classList.toggle("open", showExplain);
-    }
-    if (chartPcEl){
-      chartPcEl.classList.toggle("expOpen", showExplain);
-    }
-
-    if (showExplain && explainEl){
-      requestAnimationFrame(() => {
-        const scroller = document.getElementById("viewGB") || explainEl.closest(".view");
-        if (scroller && typeof scroller.scrollTo === "function"){
-          const sr = scroller.getBoundingClientRect();
-          const tr = explainEl.getBoundingClientRect();
-          const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
-          scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-        } else {
-          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
-    }
-}
+  if (btnExplain){
+    btnExplain.classList.remove("on");
+    btnExplain.textContent = "Explicación";
+    btnExplain.addEventListener("click", pulseExplainGB);
+  }
 
   function fmtPop(v){
     return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
@@ -2921,18 +2900,8 @@ function makeChartController(opts){
       if (controller) controller.onShow();
     });
   }
-
-  if (btnExplain){
-    updateExplainUI();
-    btnExplain.addEventListener("click", () => {
-      showExplain = !showExplain;
-      updateExplainUI();
-    });
-  } else {
-    updateExplainUI();
-  }
-
-  try{
+  // Explicación: botón de pulso (sin estado) ya configurado arriba.
+try{
     await loadGB();
     updatePopUI();
   } catch(e){
@@ -2964,59 +2933,36 @@ function makeChartController(opts){
 
 
 
-  // Explicación (si hay botón de toggle)
+
+  // Explicación (botón de pulso: hace scroll; no mantiene estado ON/OFF)
   const btnExplain = document.getElementById("btnExplainPA");
   const explainEl = document.getElementById("paExplain");
-  const chartPcEl = document.querySelector("#viewPA .pc.chartPc");
-  let showExplain = false;
 
-  function updateExplainUI(){
-    // En este index, la explicación está en un panel aparte y NO es colapsable por defecto.
-    // Aun así, si existe un botón "Explicación", permitimos alternar una clase y hacer scroll suave.
-    if (btnExplain){
-      btnExplain.classList.toggle("on", showExplain);
-      btnExplain.textContent = "Explicación";
+  function pulseExplainPA(){
+    if (!explainEl) return;
+
+    // Si algún día la explicación se marca como colapsable, la abrimos aquí.
+    if (explainEl.classList.contains("explainCollapsible")){
+      explainEl.classList.add("open");
     }
 
-    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
-    if (wrap){
-      if (showExplain){
-        if (!wrap.dataset.lockH){
-          const h = Math.round(wrap.getBoundingClientRect().height);
-          wrap.dataset.lockH = String(h);
-        }
-        wrap.style.flex = "0 0 auto";
-        wrap.style.height = wrap.dataset.lockH + "px";
+    requestAnimationFrame(() => {
+      const scroller = document.getElementById("viewPA") || explainEl.closest(".view");
+      if (scroller && typeof scroller.scrollTo === "function"){
+        const sr = scroller.getBoundingClientRect();
+        const tr = explainEl.getBoundingClientRect();
+        const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       } else {
-        if (wrap.dataset.lockH){
-          delete wrap.dataset.lockH;
-          wrap.style.flex = "";
-          wrap.style.height = "";
-        }
+        explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }
+    });
+  }
 
-    if (explainEl){
-      explainEl.classList.toggle("open", showExplain);
-      // si fuera colapsable, la clase "open" lo mostraría
-    }
-    if (chartPcEl){
-      chartPcEl.classList.toggle("expOpen", showExplain);
-    }
-
-    if (showExplain && explainEl){
-      requestAnimationFrame(() => {
-        const scroller = document.getElementById("viewPA") || explainEl.closest(".view");
-        if (scroller && typeof scroller.scrollTo === "function"){
-          const sr = scroller.getBoundingClientRect();
-          const tr = explainEl.getBoundingClientRect();
-          const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
-          scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-        } else {
-          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
-    }
+  if (btnExplain){
+    btnExplain.classList.remove("on");
+    btnExplain.textContent = "Explicación";
+    btnExplain.addEventListener("click", pulseExplainPA);
   }
 
   function drawPresBands(gBg, xScale, plotRect){
@@ -3140,19 +3086,8 @@ function makeChartController(opts){
       controller.onShow();
     });
   }
-
-  if (btnExplain){
-    updateExplainUI();
-    btnExplain.addEventListener("click", () => {
-      showExplain = !showExplain;
-      updateExplainUI();
-    });
-  } else {
-    updateExplainUI();
-  }
-
-
-  window.__pa = { onShow: () => controller.onShow() };
+  // Explicación: botón de pulso (sin estado) ya configurado arriba.
+window.__pa = { onShow: () => controller.onShow() };
 })();
 </script>
 </body>
