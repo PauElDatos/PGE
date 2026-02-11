@@ -485,6 +485,10 @@
     #viewGB #btnJumpExplainGB{ margin-left: auto; }
     #gbExplainPanel{ scroll-margin-top: 86px; }
     #gbExplainPanel.jumpFlash{ animation: jumpFlash .9s ease; }
+#viewPA #btnJumpExplainPA{ margin-left: auto; }
+    #paExplainPanel{ scroll-margin-top: 86px; }
+    #paExplainPanel.jumpFlash{ animation: jumpFlash .9s ease; }
+
     @keyframes jumpFlash{
       0%{ box-shadow: 0 0 0 0 rgba(254,247,2,0); }
       25%{ box-shadow: 0 0 0 4px rgba(254,247,2,.22); }
@@ -939,6 +943,7 @@
 
           <div class="chartControls">
             <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
+            <button class="btn" id="btnJumpExplainPA" title="Bajar a la explicación">Explicación</button>
   </div>
 
         
@@ -954,7 +959,7 @@
       </section>
     </div>
 
-    <section class="panel">
+    <section class="panel" id="paExplainPanel">
       <div class="ph">
         <div class="ttl">Explicación</div>
         <div class="sub"></div>
@@ -1023,6 +1028,23 @@
 (function(){
   const btn = document.getElementById("btnJumpExplainGB");
   const target = document.getElementById("gbExplainPanel") || document.getElementById("gbExplain");
+  if (!btn || !target) return;
+
+  btn.addEventListener("click", () => {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // pequeño feedback visual
+    target.classList.remove("jumpFlash");
+    void target.offsetWidth; // reinicia la animación
+    target.classList.add("jumpFlash");
+  });
+})();
+
+
+/* ===================== Botón: bajar a la explicación (PA) ===================== */
+(function(){
+  const btn = document.getElementById("btnJumpExplainPA");
+  const target = document.getElementById("paExplainPanel") || document.getElementById("paExplain");
   if (!btn || !target) return;
 
   btn.addEventListener("click", () => {
