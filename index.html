@@ -818,6 +818,7 @@
 
           <div class="chartControls">
             <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
+            <button class="btn" id="btnExplainPA" title="Ir a la explicación">Explicación</button>
   </div>
 
         
@@ -2881,17 +2882,50 @@ function makeChartController(opts){
 
   function updateExplainUI(){
     // En este index, la explicación está en un panel aparte y NO es colapsable por defecto.
-    // Aun así, si existe un botón "Explicación", permitimos alternar una clase.
+    // Aun así, si existe un botón "Explicación", permitimos alternar una clase y hacer scroll suave.
     if (btnExplain){
       btnExplain.classList.toggle("on", showExplain);
       btnExplain.textContent = "Explicación";
     }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
     if (explainEl){
       explainEl.classList.toggle("open", showExplain);
       // si fuera colapsable, la clase "open" lo mostraría
     }
     if (chartPcEl){
       chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => {
+        const scroller = document.getElementById("viewPA") || explainEl.closest(".view");
+        if (scroller && typeof scroller.scrollTo === "function"){
+          const sr = scroller.getBoundingClientRect();
+          const tr = explainEl.getBoundingClientRect();
+          const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
     }
   }
 
