@@ -481,6 +481,16 @@
       margin-left: auto;
     }
 
+    /* Botón "Explicación" (salto con scroll) */
+    #viewGB #btnJumpExplainGB{ margin-left: auto; }
+    #gbExplainPanel{ scroll-margin-top: 86px; }
+    #gbExplainPanel.jumpFlash{ animation: jumpFlash .9s ease; }
+    @keyframes jumpFlash{
+      0%{ box-shadow: 0 0 0 0 rgba(254,247,2,0); }
+      25%{ box-shadow: 0 0 0 4px rgba(254,247,2,.22); }
+      100%{ box-shadow: 0 0 0 0 rgba(254,247,2,0); }
+    }
+
         /* Scroll en el panel izquierdo (GB/PA) como en PGE */
     #viewGB > section.panel:first-child .pc,
     #viewPA > section.panel:first-child .pc{
@@ -843,6 +853,7 @@
             <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
             <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
             <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
+            <button class="btn" id="btnJumpExplainGB" title="Bajar a la explicación">Explicación</button>
   </div>
 
         
@@ -861,7 +872,7 @@
       </section>
     </div>
 
-    <section class="panel">
+    <section class="panel" id="gbExplainPanel">
       <div class="ph">
         <div class="ttl">Explicación</div>
         <div class="sub"></div>
@@ -1005,6 +1016,23 @@
 
   btns.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
   setView("pge");
+})();
+
+
+/* ===================== Botón: bajar a la explicación (GB) ===================== */
+(function(){
+  const btn = document.getElementById("btnJumpExplainGB");
+  const target = document.getElementById("gbExplainPanel") || document.getElementById("gbExplain");
+  if (!btn || !target) return;
+
+  btn.addEventListener("click", () => {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // pequeño feedback visual
+    target.classList.remove("jumpFlash");
+    void target.offsetWidth; // reinicia la animación
+    target.classList.add("jumpFlash");
+  });
 })();
 
 

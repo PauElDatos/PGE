@@ -732,7 +732,8 @@
             <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
             <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
             <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
-  </div>
+              <button class="btn" id="btnExplainGB" title="Ir a la explicación">Explicación</button>
+</div>
 
         
 
@@ -2437,14 +2438,18 @@ function makeChartController(opts){
 
     if (showExplain && explainEl){
       requestAnimationFrame(() => {
-        if (chartPcEl){
-          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        const scroller = document.getElementById("viewGB") || explainEl.closest(".view");
+        if (scroller && typeof scroller.scrollTo === "function"){
+          const sr = scroller.getBoundingClientRect();
+          const tr = explainEl.getBoundingClientRect();
+          const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         } else {
           explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
     }
-  }
+}
 
   function fmtPop(v){
     return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
