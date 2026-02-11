@@ -3,7 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>entendiendo la economía de España</title>
+  
+  <script>
+  // Redirección automática a la versión móvil (se puede forzar escritorio con ?desktop=1)
+  (function(){
+    try{
+      const params = new URLSearchParams(location.search);
+      if (params.get("desktop") === "1") return;
+
+      const ua = navigator.userAgent || "";
+      const isUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const isCoarse = (window.matchMedia && window.matchMedia("(pointer:coarse)").matches) || false;
+      const smallScreen = Math.min(screen.width || 9999, screen.height || 9999) <= 900;
+
+      const isMobile = isUA || (isCoarse && smallScreen);
+      const onMobilePage = /mobile\.html$/i.test(location.pathname);
+
+      if (isMobile && !onMobilePage){
+        const target = "mobile.html" + location.search + location.hash;
+        location.replace(target);
+      }
+    }catch(e){}
+  })();
+  </script>
+<title>entendiendo la economía de España</title>
 
   <style>
 
@@ -566,6 +589,63 @@
     }
 
 
+/* Población (flechas) - Vista GB */
+.popArrowsBar{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
+  background: rgba(0,0,0,.10);
+  overflow: hidden;
+}
+.popArrowsScroll{
+  display:flex;
+  gap:8px;
+  align-items:flex-end;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.popArrowItem{
+  flex: 0 0 42px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  user-select:none;
+}
+.popArrowIcon{
+  width: 18px;
+  height: 18px;
+  transform-origin: 50% 50%;
+  transform: scale(var(--s, 1));
+  opacity: .95;
+}
+.popArrowItem.down .popArrowIcon{
+  transform: rotate(180deg) scale(var(--s, 1));
+}
+.popArrowItem.none .popArrowIcon{ opacity: .25; }
+.popArrowYear{
+  font-size: calc(9px * var(--uiScale));
+  opacity: .75;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+.popArrowItem.up{ color: rgba(46, 255, 122, .95); }
+.popArrowItem.down{ color: rgba(255, 74, 74, .95); }
+.popArrowItem.none{ color: rgba(176,176,176,.6); }
+.popArrowIcon svg{ width:100%; height:100%; display:block; }
+.popArrowIcon path, .popArrowIcon polyline, .popArrowIcon line{
+  stroke: currentColor;
+  stroke-width: 2.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
   
     /* ===== Vistas GB/PA: explicación debajo de Series + Gráfico (se ve con scroll) ===== */
     #viewGB.view.active,
@@ -699,6 +779,9 @@
         </div>
 
         <div class="pc chartPc">
+          <div class="popArrowsBar" id="gbPopArrowsBar" style="display:none;" aria-label="Variación anual de la población">
+            <div class="popArrowsScroll" id="gbPopArrows"></div>
+          </div>
           <div class="svgWrap" id="svgWrapGB">
             <svg id="chartSvgGB" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de PIB y gasto público en euros constantes 1986"></svg>
             <div class="tooltip" id="tooltipGB" style="display:none;"></div>
@@ -708,8 +791,9 @@
           <div class="chartControls">
             <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
             <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-            <button class="btn" id="btnPopGB" title="Mostrar/ocultar tabla de población total">Población: OFF</button>
-  </div>
+            <button class="btn" id="btnPopGB" title="Mostrar/ocultar flechas de variación anual de población">Población: OFF</button>
+              <button class="btn" id="btnExplainGB" title="Ir a la explicación">Explicación</button>
+</div>
 
         
 
@@ -794,6 +878,7 @@
 
           <div class="chartControls">
             <button class="btn on" id="btnPolBandsPA" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
+            <button class="btn" id="btnExplainPA" title="Ir a la explicación">Explicación</button>
   </div>
 
         
@@ -1161,7 +1246,7 @@ function makeChartController(opts){
     focusSet: null,
     hoverKey: null,
     hoverFocusMode: false,
-    crosshairMode: false,
+    crosshairMode: ((window.matchMedia && window.matchMedia("(pointer:coarse)").matches) ? true : false),
     scaleMode: "exp",
     highlight: null, // {start,end,keys:Array<string>}
     pathEls: new Map(),
@@ -1798,8 +1883,18 @@ function makeChartController(opts){
       applyFocusStyles(true);
     }
 
+    // Mouse + táctil (Pointer Events). Mantiene compatibilidad con navegadores antiguos.
+    hit.addEventListener("pointermove", onMove);
+    hit.addEventListener("pointerleave", onLeave);
+    hit.addEventListener("pointercancel", onLeave);
+    hit.addEventListener("pointerdown", (ev) => {
+      try{ hit.setPointerCapture(ev.pointerId); }catch(e){}
+      onMove(ev);
+    });
+
     hit.addEventListener("mousemove", onMove);
     hit.addEventListener("mouseleave", onLeave);
+
     hit.addEventListener("click", (ev) => {
       if (state.hoverKey){
         toggleFocusKey(state.hoverKey, ev.shiftKey);
@@ -1818,6 +1913,10 @@ function makeChartController(opts){
       });
     }
     if (controls && controls.btnCrosshair){
+      // En pantallas táctiles (pointer:coarse) activamos la línea vertical por defecto
+      controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
+      controls.btnCrosshair.classList.toggle("on", state.crosshairMode);
+
       bind(controls.btnCrosshair, "click", () => {
         state.crosshairMode = !state.crosshairMode;
         controls.btnCrosshair.textContent = "Línea vertical: " + (state.crosshairMode ? "ON" : "OFF");
@@ -2350,6 +2449,8 @@ function makeChartController(opts){
 
   const popBox = document.getElementById("gbPopBox");
   const popBody = document.getElementById("gbPopBody");
+  const popArrowsBar = document.getElementById("gbPopArrowsBar");
+  const popArrows = document.getElementById("gbPopArrows");
 
   const controls = {
     btnCrosshair: document.getElementById("btnCrosshairGB"),
@@ -2360,6 +2461,7 @@ function makeChartController(opts){
   let showPresBands = true;
   let showPop = false;
   let popTableData = [];
+  let popArrowsBuilt = false;
 
   // Explicación desplegable
   const btnExplain = document.getElementById("btnExplainGB");
@@ -2400,14 +2502,18 @@ function makeChartController(opts){
 
     if (showExplain && explainEl){
       requestAnimationFrame(() => {
-        if (chartPcEl){
-          chartPcEl.scrollTo({ top: Math.max(0, explainEl.offsetTop - 8), behavior: "smooth" });
+        const scroller = document.getElementById("viewGB") || explainEl.closest(".view");
+        if (scroller && typeof scroller.scrollTo === "function"){
+          const sr = scroller.getBoundingClientRect();
+          const tr = explainEl.getBoundingClientRect();
+          const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         } else {
           explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
     }
-  }
+}
 
   function fmtPop(v){
     return Number.isFinite(v) ? Math.round(v).toLocaleString("es-ES") : "—";
@@ -2428,18 +2534,103 @@ function makeChartController(opts){
     }
   }
 
-  function updatePopUI(){
-    if (btnPop){
-      btnPop.classList.toggle("on", showPop);
-      btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
-    }
-    if (popBox){
-      popBox.style.display = showPop ? "block" : "none";
-    }
-    if (showPop && popBody && popBody.childElementCount === 0){
-      renderPopTable();
-    }
+
+
+function renderPopArrows(){
+  if (!popArrows) return;
+  popArrows.innerHTML = "";
+  popArrowsBuilt = true;
+
+  if (!popTableData || popTableData.length < 2) return;
+
+  // Variación anual (%): (pop_t / pop_{t-1} - 1) * 100
+  const deltas = [];
+  for (let i=1; i<popTableData.length; i++){
+    const y = popTableData[i].year;
+    const p0 = popTableData[i-1].pop;
+    const p1 = popTableData[i].pop;
+    if (!Number.isFinite(p0) || !Number.isFinite(p1) || p0 <= 0) continue;
+    const pct = (p1 / p0 - 1) * 100;
+    deltas.push({ year: y, pct });
   }
+  if (!deltas.length) return;
+
+  let maxAbs = 0;
+  for (const d of deltas) maxAbs = Math.max(maxAbs, Math.abs(d.pct));
+  if (!Number.isFinite(maxAbs) || maxAbs <= 1e-9) maxAbs = 1;
+
+  function yearShort(y){
+    return String(y);
+  }
+
+  const arrowSVG = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <line x1="12" y1="20" x2="12" y2="6"></line>
+      <polyline points="6 12 12 6 18 12"></polyline>
+    </svg>`;
+
+  // Primer año: sin comparación (placeholder)
+  {
+    const y0 = popTableData[0].year;
+    const it = document.createElement("div");
+    it.className = "popArrowItem none";
+    it.title = `${y0}: — (primer año)`;
+    const ic = document.createElement("div");
+    ic.className = "popArrowIcon";
+    ic.innerHTML = arrowSVG;
+    const yr = document.createElement("div");
+    yr.className = "popArrowYear";
+    yr.textContent = yearShort(y0);
+    it.appendChild(ic);
+    it.appendChild(yr);
+    popArrows.appendChild(it);
+  }
+
+  for (const d of deltas){
+    const dir = (d.pct >= 0) ? "up" : "down";
+    const mag = Math.abs(d.pct) / maxAbs;
+    // Escala (tamaño) proporcional: 0.35 .. 1.15
+    const scale = 0.35 + 0.80 * clamp(mag, 0, 1);
+
+    const it = document.createElement("div");
+    it.className = "popArrowItem " + dir;
+    it.style.setProperty("--s", scale.toFixed(3));
+    it.title = `${d.year}: ${fmtPctSigned(d.pct)} vs año anterior`;
+
+    const ic = document.createElement("div");
+    ic.className = "popArrowIcon";
+    ic.innerHTML = arrowSVG;
+
+    const yr = document.createElement("div");
+    yr.className = "popArrowYear";
+    yr.textContent = yearShort(d.year);
+
+    it.appendChild(ic);
+    it.appendChild(yr);
+    popArrows.appendChild(it);
+  }
+}
+
+function updatePopUI(){
+  if (btnPop){
+    btnPop.classList.toggle("on", showPop);
+    btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
+  }
+
+  // En vez de tabla, mostramos una fila de flechas encima del gráfico
+  if (popArrowsBar){
+    popArrowsBar.style.display = showPop ? "block" : "none";
+  }
+
+  // Aseguramos que la tabla antigua no aparezca
+  if (popBox){
+    popBox.style.display = "none";
+  }
+
+  if (showPop && !popArrowsBuilt){
+    renderPopArrows();
+  }
+}
 
   const BASE_SERIES = [
     { key:"pib_total",   label:"PIB total",                 color:"#00E5FF", axis:"left",  unit:"B€" },
@@ -2526,6 +2717,7 @@ function makeChartController(opts){
       .filter(r => Number.isFinite(r.year) && Number.isFinite(r.pop))
       .sort((a,b)=>a.year-b.year)
       .map(r => ({ year: r.year, pop: r.pop }));
+    popArrowsBuilt = false;
 
 
     const minY = rows.reduce((m,r)=>Math.min(m,r.year), Infinity);
@@ -2839,17 +3031,50 @@ function makeChartController(opts){
 
   function updateExplainUI(){
     // En este index, la explicación está en un panel aparte y NO es colapsable por defecto.
-    // Aun así, si existe un botón "Explicación", permitimos alternar una clase.
+    // Aun así, si existe un botón "Explicación", permitimos alternar una clase y hacer scroll suave.
     if (btnExplain){
       btnExplain.classList.toggle("on", showExplain);
       btnExplain.textContent = "Explicación";
     }
+
+    // Mantener el alto del gráfico al abrir/cerrar "Explicación" (evita que se achate)
+    if (wrap){
+      if (showExplain){
+        if (!wrap.dataset.lockH){
+          const h = Math.round(wrap.getBoundingClientRect().height);
+          wrap.dataset.lockH = String(h);
+        }
+        wrap.style.flex = "0 0 auto";
+        wrap.style.height = wrap.dataset.lockH + "px";
+      } else {
+        if (wrap.dataset.lockH){
+          delete wrap.dataset.lockH;
+          wrap.style.flex = "";
+          wrap.style.height = "";
+        }
+      }
+    }
+
     if (explainEl){
       explainEl.classList.toggle("open", showExplain);
       // si fuera colapsable, la clase "open" lo mostraría
     }
     if (chartPcEl){
       chartPcEl.classList.toggle("expOpen", showExplain);
+    }
+
+    if (showExplain && explainEl){
+      requestAnimationFrame(() => {
+        const scroller = document.getElementById("viewPA") || explainEl.closest(".view");
+        if (scroller && typeof scroller.scrollTo === "function"){
+          const sr = scroller.getBoundingClientRect();
+          const tr = explainEl.getBoundingClientRect();
+          const top = (tr.top - sr.top) + (scroller.scrollTop || 0) - 8;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        } else {
+          explainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
     }
   }
 

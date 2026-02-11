@@ -589,63 +589,6 @@
     }
 
 
-/* Población (flechas) - Vista GB */
-.popArrowsBar{
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 12px;
-  background: rgba(0,0,0,.10);
-  overflow: hidden;
-}
-.popArrowsScroll{
-  display:flex;
-  gap:8px;
-  align-items:flex-end;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
-}
-.popArrowItem{
-  flex: 0 0 42px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:4px;
-  user-select:none;
-}
-.popArrowIcon{
-  width: 18px;
-  height: 18px;
-  transform-origin: 50% 50%;
-  transform: scale(var(--s, 1));
-  opacity: .95;
-}
-.popArrowItem.down .popArrowIcon{
-  transform: rotate(180deg) scale(var(--s, 1));
-}
-.popArrowItem.none .popArrowIcon{ opacity: .25; }
-.popArrowYear{
-  font-size: calc(9px * var(--uiScale));
-  opacity: .75;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  white-space: nowrap;
-}
-.popArrowItem.up{ color: rgba(46, 255, 122, .95); }
-.popArrowItem.down{ color: rgba(255, 74, 74, .95); }
-.popArrowItem.none{ color: rgba(176,176,176,.6); }
-.popArrowIcon svg{ width:100%; height:100%; display:block; }
-.popArrowIcon path, .popArrowIcon polyline, .popArrowIcon line{
-  stroke: currentColor;
-  stroke-width: 2.2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-
   
     /* ===== Vistas GB/PA: explicación debajo de Series + Gráfico (se ve con scroll) ===== */
     #viewGB.view.active,
@@ -779,9 +722,6 @@
         </div>
 
         <div class="pc chartPc">
-          <div class="popArrowsBar" id="gbPopArrowsBar" style="display:none;" aria-label="Variación anual de la población">
-            <div class="popArrowsScroll" id="gbPopArrows"></div>
-          </div>
           <div class="svgWrap" id="svgWrapGB">
             <svg id="chartSvgGB" class="chartSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gráfico de PIB y gasto público en euros constantes 1986"></svg>
             <div class="tooltip" id="tooltipGB" style="display:none;"></div>
@@ -791,7 +731,7 @@
           <div class="chartControls">
             <button class="btn" id="btnCrosshairGB">Línea vertical: OFF</button>
             <button class="btn on" id="btnPolBandsGB" title="Mostrar/ocultar colores de presidencias">Políticos: ON</button>
-            <button class="btn" id="btnPopGB" title="Mostrar/ocultar flechas de variación anual de población">Población: OFF</button>
+            <button class="btn" id="btnPopGB" title="Mostrar/ocultar flechas de variación de población">Población: OFF</button>
               <button class="btn" id="btnExplainGB" title="Ir a la explicación">Explicación</button>
 </div>
 
@@ -1230,6 +1170,7 @@ function makeChartController(opts){
     yDomain,
     formatValue,
     extraBackground,
+    extraAnnotations,
     yTickBuilder,
     rightAxis,
     yLabelLeft,
@@ -1438,6 +1379,7 @@ function makeChartController(opts){
     const gLines = createSvgEl("g");
     const gOverlay = createSvgEl("g");
     const gHi = createSvgEl("g");
+    const gAnn = createSvgEl("g");
 
     if (extraBackground) extraBackground(gBg, xScale, plotRect);
 
@@ -1657,6 +1599,12 @@ function makeChartController(opts){
       }
     }
 
+
+    // Extra annotations (optional)
+    if (extraAnnotations){
+      extraAnnotations(gAnn, { w,h, margin, plotRect, plotW, plotH, xScale, yScaleLeftT, yTransform, mapRightToLeftT, xDomain });
+    }
+
     // Overlay
     const crosshair = createSvgEl("line", {
       x1: margin.l, y1: margin.t, x2: margin.l, y2: margin.t+plotH,
@@ -1683,6 +1631,7 @@ function makeChartController(opts){
     svg.appendChild(gAxes);
     svg.appendChild(gLines);
     svg.appendChild(gHi);
+    svg.appendChild(gAnn);
     svg.appendChild(gOverlay);
 
     state.geom = { w,h, margin, plotW, plotH, xScale, yScaleLeftT, yTransform, mapRightToLeftT, crosshair, dot, hit };
@@ -2449,8 +2398,6 @@ function makeChartController(opts){
 
   const popBox = document.getElementById("gbPopBox");
   const popBody = document.getElementById("gbPopBody");
-  const popArrowsBar = document.getElementById("gbPopArrowsBar");
-  const popArrows = document.getElementById("gbPopArrows");
 
   const controls = {
     btnCrosshair: document.getElementById("btnCrosshairGB"),
@@ -2461,7 +2408,6 @@ function makeChartController(opts){
   let showPresBands = true;
   let showPop = false;
   let popTableData = [];
-  let popArrowsBuilt = false;
 
   // Explicación desplegable
   const btnExplain = document.getElementById("btnExplainGB");
@@ -2535,102 +2481,17 @@ function makeChartController(opts){
   }
 
 
-
-function renderPopArrows(){
-  if (!popArrows) return;
-  popArrows.innerHTML = "";
-  popArrowsBuilt = true;
-
-  if (!popTableData || popTableData.length < 2) return;
-
-  // Variación anual (%): (pop_t / pop_{t-1} - 1) * 100
-  const deltas = [];
-  for (let i=1; i<popTableData.length; i++){
-    const y = popTableData[i].year;
-    const p0 = popTableData[i-1].pop;
-    const p1 = popTableData[i].pop;
-    if (!Number.isFinite(p0) || !Number.isFinite(p1) || p0 <= 0) continue;
-    const pct = (p1 / p0 - 1) * 100;
-    deltas.push({ year: y, pct });
-  }
-  if (!deltas.length) return;
-
-  let maxAbs = 0;
-  for (const d of deltas) maxAbs = Math.max(maxAbs, Math.abs(d.pct));
-  if (!Number.isFinite(maxAbs) || maxAbs <= 1e-9) maxAbs = 1;
-
-  function yearShort(y){
-    return String(y);
+  function updatePopUI(){
+    if (btnPop){
+      btnPop.classList.toggle("on", showPop);
+      btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
+    }
+    // La tabla antigua ya no se usa: ahora dibujamos flechas dentro del gráfico
+    if (popBox){
+      popBox.style.display = "none";
+    }
   }
 
-  const arrowSVG = `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <line x1="12" y1="20" x2="12" y2="6"></line>
-      <polyline points="6 12 12 6 18 12"></polyline>
-    </svg>`;
-
-  // Primer año: sin comparación (placeholder)
-  {
-    const y0 = popTableData[0].year;
-    const it = document.createElement("div");
-    it.className = "popArrowItem none";
-    it.title = `${y0}: — (primer año)`;
-    const ic = document.createElement("div");
-    ic.className = "popArrowIcon";
-    ic.innerHTML = arrowSVG;
-    const yr = document.createElement("div");
-    yr.className = "popArrowYear";
-    yr.textContent = yearShort(y0);
-    it.appendChild(ic);
-    it.appendChild(yr);
-    popArrows.appendChild(it);
-  }
-
-  for (const d of deltas){
-    const dir = (d.pct >= 0) ? "up" : "down";
-    const mag = Math.abs(d.pct) / maxAbs;
-    // Escala (tamaño) proporcional: 0.35 .. 1.15
-    const scale = 0.35 + 0.80 * clamp(mag, 0, 1);
-
-    const it = document.createElement("div");
-    it.className = "popArrowItem " + dir;
-    it.style.setProperty("--s", scale.toFixed(3));
-    it.title = `${d.year}: ${fmtPctSigned(d.pct)} vs año anterior`;
-
-    const ic = document.createElement("div");
-    ic.className = "popArrowIcon";
-    ic.innerHTML = arrowSVG;
-
-    const yr = document.createElement("div");
-    yr.className = "popArrowYear";
-    yr.textContent = yearShort(d.year);
-
-    it.appendChild(ic);
-    it.appendChild(yr);
-    popArrows.appendChild(it);
-  }
-}
-
-function updatePopUI(){
-  if (btnPop){
-    btnPop.classList.toggle("on", showPop);
-    btnPop.textContent = "Población: " + (showPop ? "ON" : "OFF");
-  }
-
-  // En vez de tabla, mostramos una fila de flechas encima del gráfico
-  if (popArrowsBar){
-    popArrowsBar.style.display = showPop ? "block" : "none";
-  }
-
-  // Aseguramos que la tabla antigua no aparezca
-  if (popBox){
-    popBox.style.display = "none";
-  }
-
-  if (showPop && !popArrowsBuilt){
-    renderPopArrows();
-  }
-}
 
   const BASE_SERIES = [
     { key:"pib_total",   label:"PIB total",                 color:"#00E5FF", axis:"left",  unit:"B€" },
@@ -2645,6 +2506,85 @@ function updatePopUI(){
     series: new Map(),      // key -> {xs,ys}
     yearVal: new Map(),     // key -> Map(year->v)
   };
+
+
+  function drawPopArrowsInPlot(g, geom){
+    if (!showPop) return;
+
+    const mp = app.yearVal.get("poblacion_total");
+    if (!mp) return;
+
+    const items = [];
+    let maxAbs = 0;
+
+    for (let y = app.xDomain.min + 1; y <= app.xDomain.max; y++){
+      const v0 = mp.get(y - 1);
+      const v1 = mp.get(y);
+      if (!Number.isFinite(v0) || !Number.isFinite(v1) || v0 === 0) continue;
+
+      const pct = (v1 / v0 - 1) * 100;
+      const abs = Math.abs(pct);
+      if (abs > maxAbs) maxAbs = abs;
+      items.push({ year: y, pct });
+    }
+
+    if (!items.length) return;
+
+    g.setAttribute("style", "pointer-events:none;");
+
+    const plotRect = geom.plotRect;
+    const xScale = geom.xScale;
+
+    const minLen = 6;
+    const maxLen = 18;
+    const minHeadW = 5;
+    const maxHeadW = 10;
+
+    // Mantiene las flechas dentro del área de dibujo, cerca del borde superior del gráfico
+    const yAnchor = plotRect.y + 6 + maxLen;
+
+    for (const it of items){
+      const x = xScale(it.year);
+      if (!Number.isFinite(x)) continue;
+      if (x < plotRect.x - 2 || x > plotRect.x + plotRect.w + 2) continue;
+
+      const scale = (maxAbs > 0) ? (Math.abs(it.pct) / maxAbs) : 0;
+      const len = minLen + scale * (maxLen - minLen);
+      const headW = minHeadW + scale * (maxHeadW - minHeadW);
+      const headH = Math.max(4, headW * 0.75);
+
+      const up = it.pct >= 0;
+      const col = up ? "rgba(0, 200, 90, .95)" : "rgba(230, 60, 60, .95)";
+
+      const tipY = up ? (yAnchor - len) : (yAnchor + len);
+      const stemStart = up ? (yAnchor + len * 0.55) : (yAnchor - len * 0.55);
+      const stemEnd = up ? (tipY + headH) : (tipY - headH);
+
+      // Tallo
+      g.appendChild(createSvgEl("line", {
+        x1: x, y1: stemStart, x2: x, y2: stemEnd,
+        stroke: col,
+        "stroke-width": (1.25 + scale * 1.25).toFixed(2),
+        "stroke-linecap": "round",
+        opacity: 0.95,
+        "vector-effect": "non-scaling-stroke"
+      }));
+
+      // Punta
+      const p1 = `${x},${tipY}`;
+      const p2 = `${x - headW/2},${up ? (tipY + headH) : (tipY - headH)}`;
+      const p3 = `${x + headW/2},${up ? (tipY + headH) : (tipY - headH)}`;
+      g.appendChild(createSvgEl("polygon", {
+        points: `${p1} ${p2} ${p3}`,
+        fill: col,
+        stroke: "rgba(0,0,0,.35)",
+        "stroke-width": 0.6,
+        opacity: 0.98,
+        "vector-effect": "non-scaling-stroke"
+      }));
+    }
+  }
+
 
   function getSeriesDefs(){
     return BASE_SERIES.slice();
@@ -2717,7 +2657,6 @@ function updatePopUI(){
       .filter(r => Number.isFinite(r.year) && Number.isFinite(r.pop))
       .sort((a,b)=>a.year-b.year)
       .map(r => ({ year: r.year, pop: r.pop }));
-    popArrowsBuilt = false;
 
 
     const minY = rows.reduce((m,r)=>Math.min(m,r.year), Infinity);
@@ -2949,6 +2888,7 @@ function updatePopUI(){
       yDomain: { left: { min: 0, max: yLmax } },
       formatValue: (k,v)=>formatVal(k,v),
       extraBackground,
+      extraAnnotations: (gAnn, geom) => drawPopArrowsInPlot(gAnn, geom),
       rightAxis: { ticks: rightTicks, formatTick: (v)=>String(v) },
       yLabelLeft: "Miles de millones de € (1986)",
       yLabelRight: "Miles de € por persona (1986)",
@@ -2978,6 +2918,7 @@ function updatePopUI(){
     btnPop.addEventListener("click", () => {
       showPop = !showPop;
       updatePopUI();
+      if (controller) controller.onShow();
     });
   }
 
